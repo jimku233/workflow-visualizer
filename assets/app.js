@@ -142,6 +142,8 @@
   }
   function relayout(){ VN.forEach(function(n){ if(V[n]) measure(V[n]); }); paintActive(); }
   function setPanel(open){ document.body.classList.toggle('panel-open', !!open); relayout(); }
+  // C3：右栏画什么只由 sel 决定，统一从这里进（原来是 5 处各自写 renderPanel(null / meta[sel])）
+  function refreshPanel(){ renderPanel(sel ? meta[sel] : null); }
   function select(id){
     sel=id;
     if(id) setPanel(true); else if(document.body.classList.contains('panel-open') && window.innerWidth<=600) setPanel(false);
@@ -150,14 +152,14 @@
       s.querySelectorAll('.edge').forEach(function(p){ p.classList.remove('is-hi','is-dim'); p.setAttribute('marker-end','url(#arrow-'+n+')'); });
       s.querySelectorAll('.edge-label-g').forEach(function(p){ p.classList.remove('is-hi','is-dim'); });
     });
-    if(!id){ renderPanel(null); return; }
+    if(!id){ refreshPanel(); return; }
     eachSvg(function(s,n){
       s.querySelectorAll('.node').forEach(function(x){ if(x.getAttribute('data-id')!==id) x.classList.add('is-dim'); });
       var g=s.querySelector('.node[data-id="'+CSS.escape(id)+'"]'); if(g) g.classList.add('is-sel');
       s.querySelectorAll('.edge').forEach(function(p){ var a=p.getAttribute('data-from'),b=p.getAttribute('data-to'); if(a===id||b===id){ p.classList.add('is-hi'); p.setAttribute('marker-end','url(#arrow-hi-'+n+')'); } else p.classList.add('is-dim'); });
       s.querySelectorAll('.edge-label-g').forEach(function(p){ var a=p.getAttribute('data-from'),b=p.getAttribute('data-to'); if(a===id||b===id) p.classList.add('is-hi'); else p.classList.add('is-dim'); });
     });
-    renderPanel(meta[id]);
+    refreshPanel();
   }
   function renderOverview(){
     var el=document.getElementById('detail');
@@ -251,7 +253,7 @@
     document.getElementById('search-count').textContent=q?(hits+' 个匹配'+(softOnly?'（'+softOnly+' 个只在说明/备注里）':'')):'';
     // 手机端结果清单默认藏在收起的抽屉里，搜到东西就自动弹出来（这是'搜了等于没提示'的根因）
     if(q&&hits>0&&!sel) setPanel(true);
-    if(!sel) renderPanel(null);
+    if(!sel) refreshPanel();
     if(q&&hits>0&&focusOn) focusHits();
   });
   // 节点在画布(user)坐标系里的矩形。注意 getBBox() 返回的是节点自身局部坐标（0,0~w,h），
@@ -303,7 +305,7 @@
     hitIdx=(hitIdx+d+searchHits.length)%searchHits.length;
     focusHits();
     centerOn(searchHits[hitIdx], cur().view.K);
-    if(!sel) renderPanel(null);
+    if(!sel) refreshPanel();
     else select(searchHits[hitIdx]);
     var row=document.querySelector('.hit-row.cur');
     if(row&&row.scrollIntoView) row.scrollIntoView({block:'nearest'});
@@ -433,6 +435,8 @@
     matchMedia('(prefers-color-scheme: light)').addEventListener('change',function(){ applyTheme(); });
   }
   applyTheme();
+  // C2：首页/别的标签页改了外观设置 → 这个标签页立刻跟着变（localStorage 的 storage 事件只在别的标签页触发）
+  window.addEventListener('storage',function(e){ if(!e.key||e.key.indexOf('flowviz-')===0) applyTheme(); });
   document.getElementById('mmd-toggle').onclick=function(){ document.getElementById('mmd-panel').classList.toggle('open'); };
   document.getElementById('mmd-copy').onclick=function(){ var t=document.getElementById('mmd-src'); t.select(); var b=this; try{ document.execCommand('copy'); b.textContent='已复制'; }catch(err){ b.textContent='请手动复制'; } setTimeout(function(){ b.textContent='复制'; },1500); };
   window.addEventListener('keydown',function(e){
@@ -466,5 +470,5 @@
   syncAria();
   wireNodeKeyboard();
   setVariant(autoVariant(), true);
-  renderPanel(null);
+  refreshPanel();
 })();
