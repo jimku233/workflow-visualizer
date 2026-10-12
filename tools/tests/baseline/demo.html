@@ -908,9 +908,14 @@ flowchart TD
   // A3：触屏抬手后浏览器会补发一套 mousedown/mouseup，若不忽略，"轻点"会跑两遍（还会顺带起一次拖动）
   window.addEventListener('mousemove',function(e){
     if(!drag) return;
-    // 只要鼠标在移动、而**没有任何键被按住**，说明拖动早该结束了（mouseup 丢过 / 拖出窗口松的手）
-    if(typeof e.buttons==='number' && e.buttons===0){ drag=null; return; }
-    var v=V[drag.n]; var dx=e.clientX-drag.x, dy=e.clientY-drag.y; if(Math.abs(dx)+Math.abs(dy)>3) drag.moved=true; v.view.TX=drag.ox+dx; v.view.TY=drag.oy+dy; paintActive(); });
+    // 鼠标在动、但没有任何键被按住：
+    //   · 已经拖过（moved=true）→ 说明 mouseup 丢了/在窗口外松的手，直接结束拖动（治"黏鼠标"）
+    //   · 还没拖过 → 这是一个"点击"的中途，**不能**清 drag，否则随后的 mouseup 选不中节点（点节点没反应）
+    if(typeof e.buttons==='number' && e.buttons===0){
+      if(drag.moved) drag=null;
+      return;
+    }
+    var v=V[drag.n]; var dx=e.clientX-drag.x, dy=e.clientY-drag.y; if(Math.abs(dx)+Math.abs(dy)>6) drag.moved=true; v.view.TX=drag.ox+dx; v.view.TY=drag.oy+dy; paintActive(); });
   window.addEventListener('mouseup',function(e){
     // 注意：`drag=null` 必须无条件执行。之前把"触屏后的合成事件"判断写成了提前 return，
     // 结果拖拽状态永远清不掉 —— 表现就是"点一下图以后，图黏在鼠标上跟着走"。
