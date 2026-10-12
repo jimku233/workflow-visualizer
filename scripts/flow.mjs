@@ -1505,8 +1505,13 @@ async function cmdRefresh(dir, flags) {
   let n = 0;
   for (const f of specs) {
     const spec = join(target, f);
-    const out = join(target, f.replace(/\.(json|mmd|markdown|md)$/i, '') + '.html');
-    await cmdRender(spec, { out, all: true, wrap: flags.wrap });
+    const base = f.replace(/\.(json|mmd|markdown|md)$/i, '');
+    const out = join(target, base + '.html');
+    // 输入是 .mmd/.md 时**不要**写 <同名>.mmd：那正是源文件本身，会被导出结果改写（注释、顺序、保留字 id 全丢）
+    const isMmdSource = /\.(mmd|markdown|md)$/i.test(f);
+    await cmdRender(spec, isMmdSource
+      ? { out, svg: join(target, base + '-竖版.svg'), wrap: flags.wrap }
+      : { out, all: true, wrap: flags.wrap });
     n++;
   }
   process.stdout.write(`flow: 已刷新 ${n} 张流程图 → ${target}\n`);
