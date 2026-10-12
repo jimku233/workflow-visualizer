@@ -2,7 +2,7 @@
 
 把**业务流程**变成能点、能搜、能导出的**交互式流程图**：一个 HTML 文件搞定，零依赖、纯离线（不请求任何 CDN、不联网），同时产出可以粘进飞书 / 语雀 / GitHub / Typora 的 **Mermaid 源码**。
 
-它同时是一个 [DeepSeek Harness](https://github.com/deepseek-ai) 技能（skill）：**本仓库根目录就是技能目录**，`git clone` 到技能发现路径即可用。
+本仓库根目录**就是** [Agent Skill](https://code.claude.com/docs/en/skills) 目录（`SKILL.md` 在根上），`git clone` 到技能发现路径即可用。
 
 ![竖版（手机）](docs/screenshot-portrait.png)
 ![横版（电脑）](docs/screenshot-landscape.png)
@@ -23,14 +23,19 @@
 - 导出当前版式的 **SVG / PNG**，随时复制 **Mermaid** 源码
 - 右侧「全部流程图」抽屉在多个流程之间切换；手机端单指拖动、双指缩放
 - 分组带（阶段/班次）自动成带，标题与计数居中；起点/终点用胶囊，判断用菱形，风险点虚线
+- **键盘可用**：`Tab` 停在每个环节上、`Enter`/空格 打开详情；抽屉是标准对话框（`Esc` 关闭并回到触发按钮）
+- **可读性有硬指标**：深浅两套主题的文字对比度都由脚本按 WCAG 复算（小字 ≥4.5:1，非文本 ≥3:1）
 
-## 安装（DSH 技能，一条命令）
+## 安装
 
-DSH 的技能发现规则是「发现根下面**一层**目录里有 `SKILL.md`」（源码里 `segments.length <= 2`）。因此**本仓库根目录就是技能目录**，直接 clone 到技能发现路径即可：
+### 装成 Agent 技能（推荐）
+
+技能发现规则是「发现根下面**一层**目录里有 `SKILL.md`」。因此**本仓库根目录就是技能目录**：
 
 ```bash
-# 装成用户级技能（所有项目可用）
-git clone <本仓库地址> ~/.dsh/skills/workflow-visualizer
+# 用户级（所有项目可用）
+git clone <本仓库地址> ~/.dsh/skills/workflow-visualizer          # DSH
+git clone <本仓库地址> ~/.claude/skills/workflow-visualizer        # Claude Code 等认 SKILL.md 的 agent
 
 # 或只给某个项目用
 git clone <本仓库地址> <你的项目>/.dsh/skills/workflow-visualizer
@@ -45,7 +50,7 @@ Windows（PowerShell）：
 git clone <本仓库地址> "$env:USERPROFILE\.dsh\skills\workflow-visualizer"
 ```
 
-如果你不想搬家，也可以只把仓库的**父目录**登记进 DSH 配置：
+不想搬家，也可以把仓库的**父目录**登记进 DSH 配置：
 
 ```jsonc
 {
@@ -61,9 +66,17 @@ git clone <本仓库地址> "$env:USERPROFILE\.dsh\skills\workflow-visualizer"
 
 > 注意：不要把仓库 clone 成 `~/.dsh/skills/<仓库名>/` 之后再套一层 `skills/` —— 技能发现只认**一层**，多一层就找不到。仓库根必须直接是 `SKILL.md` 所在目录。
 
-## 30 秒上手（命令行，不需要 DSH）
+### 适配哪些 agent
 
-需要 **Node.js ≥ 18**（只用 `node:` 内建模块，没有任何第三方依赖）。
+| 情况 | 能做什么 |
+|---|---|
+| **DSH / Claude Code 等能读文件、能跑命令的 agent** | 全功能：读 `SKILL.md` → 写规格 → 跑 `flow.mjs` → 出 HTML/Mermaid ✓ |
+| **纯聊天型 AI（ChatGPT / Claude 网页版 / 手机 AI）** | 跑不了 Node，**不能渲染**；但可以读 `SKILL.md` + `references/spec.md` 帮你**写出规格（JSON / Mermaid）**，再拿到有 Node 的机器上渲染 |
+| **只要一个网页的人** | 不需要 agent：把 `node scripts/flow.mjs render …` 生成的 HTML 发给他，双击就能看 ✓ |
+
+要求只有一条：**Node.js ≥ 18**（零第三方依赖，不需要 `npm install`）。
+
+## 30 秒上手（命令行，不需要 agent）
 
 ```bash
 # 1. 生成一份示例规格，改它就行
@@ -94,6 +107,20 @@ node scripts/serve.mjs ./out 8765
 
 本机直接双击 HTML 也能用（`file://` 模式），但**手机**要访问就得起这个服务。
 
+## 拿到新版本后，老流程图会自己更新吗？
+
+**不会，这是设计如此。** 产物是**自包含 HTML**：渲染时把 CSS/JS/数据全部打进去了，所以已生成的文件永远保持当时的样子（离线、无 CDN、没有 Service Worker，没有任何东西会去"悄悄升级"它）。
+
+更新发生在**重新渲染**那一刻，三种方式：
+
+| 方式 | 怎么做 |
+|---|---|
+| 批量刷新（推荐） | `node scripts/flow.mjs refresh <目录>` —— 扫目录里所有规格（`*.json` 含 `nodes`、`*.mmd` / `*.md`）重新渲染，并重建清单与首页 |
+| 单张重渲 | `node scripts/flow.mjs render <规格> --out <同名 html> --all` |
+| 让 agent 干 | 直接说「重新渲染我的流程图」——它就是为 agent 设计的 |
+
+每个产物里写了 `<meta name="flow-version" content="x.y.z">`，清单（`流程索引.json`）记录渲染器版本；**首页会把版本对不上的文件标成「旧版渲染」**并提示跑 `refresh`，所以你不会漏掉该更新的图。
+
 ## 输入格式
 
 两种输入，字段与语法手册见 [`references/spec.md`](references/spec.md)：
@@ -102,6 +129,9 @@ node scripts/serve.mjs ./out 8765
   节点字段 `kind`（`start` 起点、`end` 终点、`task` 环节、`milestone` 关键检查点、`decision` 判断、`risk` 风险点）、
   `status`（`done / doing / todo / risk / hold`）、`time / owner / detail / note`。
 - **Mermaid 子集**：`flowchart TD/LR`、`subgraph` 分组、`A[方形]`、`B{菱形}`、`C(胶囊)`、`-.->` 虚线、`|标签|`。
+  - 对渲染没有影响的真实指令（`classDef` / `class` / `style` / `linkStyle` / `click` / `direction` / `accTitle` / `accDescr`）**会被忽略并在命令行提示**，所以从别处粘来的片段也能直接画；
+  - 不支持的语法**会报错并给出 文件:行:列**，不会静默画错（错误契约见 `docs/interfaces.md`）；
+  - 边标签里出现 `|` 时，导出的 Mermaid 会把它换成视觉等价的 `∣`（U+2223），因为 `|…|` 语法装不下竖线。
 
 `examples/` 里是一份 JSON 示例（虚构的饮品店日常）和一份 Mermaid 示例（虚构的报销审批），直接改就行。
 
@@ -110,6 +140,7 @@ node scripts/serve.mjs ./out 8765
 | 命令 | 作用 |
 |---|---|
 | `render <spec> [--out x.html] [--all] [--wrap N] [--debug]` | 渲染 HTML + 两版 SVG + Mermaid；`--all` 才额外写 SVG/MMD |
+| `refresh <目录>` | **批量重渲染**目录里所有规格，并重建清单与静态首页 |
 | `mermaid <spec.json> [--out x.mmd]` | 只输出 Mermaid 源码 |
 | `check <spec>` | 结构检查（孤立节点 / 不可达 / 无终点 / 环） |
 | `index <目录>` | 重建「流程索引.json」并同步 `file://` 用的静态首页 |
@@ -117,19 +148,42 @@ node scripts/serve.mjs ./out 8765
 | `sample [--out x.json]` | 生成示例规格 |
 | `serve.mjs <目录> [端口]` | 起本地 / 局域网服务（首页、回收站、重命名） |
 
+**退出码**：`0` 成功 · `1` `check` 发现结构问题 · `2` 参数或输入错误（错误信息格式 `flow: 文件:行:列: 说明`）。
+**未知参数会直接报错**（不做静默忽略），`--wrap` 要求 ≥0 的整数（`0` 关闭分栏）。
+
+## 质量与回归（改代码前先看这里）
+
+零依赖、纯 Node 的四道门，任何改动之后一条条跑：
+
+```bash
+node tools/tests/parse-errors.mjs        # 解析与校验的错误契约（14 个用例）
+node tools/tests/mermaid-roundtrip.mjs   # JSON → Mermaid → 再解析，语义是否一致（4 个用例）
+node tools/tests/contrast.mjs            # 深浅主题文字对比度（小字 ≥4.5:1，非文本 ≥3:1）
+node tools/tests/regress.mjs check demo  # 产物回归：几何数据 + 忽略时间戳后的逐字节比对
+```
+
+- 纯重构的验收标准是 **`regress` 报「逐字节相同」**；确实要改行为时，先确认差异只在你预期的地方，再 `node tools/tests/regress.mjs save demo` 重录基线。
+- 前端是**独立的资源文件**（`assets/*`），由渲染器在出图时内联回单文件 HTML —— 所以改样式不用再碰转义字符串；契约见 [`docs/interfaces.md`](docs/interfaces.md) 第 7 节。
+- [`docs/frontend-review.md`](docs/frontend-review.md) 是前端审阅清单（P0/P1/P2，含已修与待办）。
+
 ## 目录结构
 
 ```
-workflow-visualizer/          ← 仓库根 = 技能目录（DSH 只认「发现根下面一层」）
-├── SKILL.md              # 技能定义（frontmatter + 使用说明 + 踩坑记录）
-├── README.md             # 你正在看的这份
-├── LICENSE               # MIT
-├── references/spec.md    # 字段 / 语法 / 布局 / 主题完整手册
-├── scripts/flow.mjs      # 渲染器：解析 → 布局 → SVG → 交互 HTML（主体）
-├── scripts/serve.mjs     # 本地 / 局域网服务 + 静态首页生成器
-├── tools/                # 开发期验证脚本（CDP 截图 / 探测），普通使用不需要
-├── examples/             # 中性示例（虚构数据）
-└── docs/                 # README 用的示意截图
+workflow-visualizer/          ← 仓库根 = 技能目录（只认「发现根下面一层」）
+├── SKILL.md                  # 技能定义（frontmatter + 用法 + 踩坑记录）
+├── README.md                 # 你正在看的这份（给人看）
+├── LICENSE                   # MIT
+├── references/spec.md        # 字段 / 语法 / 布局 / 主题完整手册
+├── docs/interfaces.md        # 接口契约：数据结构 / DOM / 视图 / localStorage / 内联契约
+├── docs/frontend-review.md   # 前端审阅报告（P0/P1/P2）
+├── scripts/flow.mjs          # 渲染器：解析 → 布局 → SVG → 交互 HTML
+├── scripts/serve.mjs         # 本地 / 局域网服务 + 静态首页生成器
+├── assets/                   # 前端源码（渲染时内联，产物仍是单文件）
+│   ├── app.js / app.css / svg.css        # 流程图页
+│   └── home.js / home.css / shell.html   # 首页 / HTML 骨架（含 {{占位符}}）
+├── tools/tests/              # 四道回归门（上面那四条命令）+ 基线
+├── tools/                    # 开发期验证脚本（CDP 截图 / 探测 / 一次性拆分脚本）
+└── examples/                 # 中性示例（虚构数据）
 ```
 
 ## 隐私与安全
@@ -141,6 +195,6 @@ workflow-visualizer/          ← 仓库根 = 技能目录（DSH 只认「发现
 
 ## License
 
-[MIT](LICENSE) © 2026 &lt;你的名字或 GitHub ID&gt;
+[MIT](LICENSE) © 2026 &lt;你的名字或 GitHub ID&gt; —— 发布前请把这行占位符换成你自己的署名。
 
 可自由使用、修改、商用、再分发，只需保留版权与许可声明。
