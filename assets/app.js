@@ -451,6 +451,19 @@
   });
   // 抽屉首屏就是关闭态：立刻 inert，免得 Tab 一上来就钻进屏外的链接
   (function(){ var dr=document.getElementById('flows-drawer'); if(dr&&('inert' in dr)) dr.inert=true; })();
+  // B4：把"开关态"同步成 aria-pressed，读屏才念得出当前选中的版式 / 筛选项 / 是否锁定
+  function syncAria(){
+    document.querySelectorAll('[data-variant-btn]').forEach(function(b){
+      b.setAttribute('aria-pressed', b.classList.contains('on')?'true':'false');
+    });
+    document.querySelectorAll('.legend button[data-status]').forEach(function(b){
+      b.setAttribute('aria-pressed', b.classList.contains('off')?'false':'true');
+    });
+    var lk=document.getElementById('lock-btn');
+    if(lk) lk.setAttribute('aria-pressed', lk.classList.contains('on')?'true':'false');
+  }
+  document.addEventListener('click',function(){ setTimeout(syncAria,0); });
+  syncAria();
   wireNodeKeyboard();
   setVariant(autoVariant(), true);
   renderPanel(null);

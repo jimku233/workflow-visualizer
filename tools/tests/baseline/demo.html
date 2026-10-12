@@ -223,13 +223,18 @@
   }
   .panel-btn{display:none}
   @media print{ header,aside,footer,#mmd-panel{display:none} #canvas{background:#fff} }
+
+  /* B6：系统开了"减少动态效果"就不做过渡/动画（抽屉、主题切换、缩放仍然可用，只是瞬时到位） */
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{transition:none!important;animation:none!important}
+  }
 </style>
 </head>
 <body>
 <header>
   <div class="brand"><span class="brand-dot"></span><span class="brand-name">示例：饮品店 · 每日开店到闭店</span></div>
-  <label class="search"><svg viewBox="0 0 16 16"><circle cx="7.2" cy="7.2" r="4.2"/><path d="M10.4 10.4L13.6 13.6"/></svg><input id="search" type="search" placeholder="搜索环节 / 负责人 / 说明"></label>
-  <span id="search-count"></span>
+  <label class="search"><svg viewBox="0 0 16 16"><circle cx="7.2" cy="7.2" r="4.2"/><path d="M10.4 10.4L13.6 13.6"/></svg><input id="search" type="search" aria-label="搜索环节 / 负责人 / 说明" placeholder="搜索环节 / 负责人 / 说明"></label>
+  <span id="search-count" role="status" aria-live="polite"></span>
   <a id="home-btn" class="icon-btn" href="./" title="回到首页（流程图清单）"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.6 7.4L8 2.8l5.4 4.6"/><path d="M4.2 7.2v5.9h7.6V7.2"/><path d="M6.8 13.1V9.6h2.4v3.5"/></svg><span>首页</span></a>
   <button id="flows-toggle" class="icon-btn flows-btn" title="全部流程图" aria-controls="flows-drawer" aria-expanded="false"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.4l5.6 3-5.6 3-5.6-3z"/><path d="M2.4 8.6l5.6 3 5.6-3M2.4 11.6l5.6 3 5.6-3"/></svg><span>全部流程图</span></button>
   <div class="legend"><button data-status="done"><i class="dot st-done"></i>已完成</button><button data-status="doing"><i class="dot st-doing"></i>进行中</button><button data-status="todo"><i class="dot st-todo"></i>待开始</button><button data-status="risk"><i class="dot st-risk"></i>需人工把关</button><button data-status="hold"><i class="dot st-hold"></i>阻塞/等素材</button></div>
@@ -775,7 +780,7 @@
   <div id="flows-list"></div>
   <p class="fd-hint">这里是同一目录下由本 skill 生成的所有流程图（按修改时间倒序）。用 HTTP 打开时会实时刷新；直接双击本地文件时用的是生成当时的清单。</p>
 </div>
-<div id="toast"></div>
+<div id="toast" role="status" aria-live="polite"></div>
 <script id="flow-data" type="application/json">{"slug":"示例：饮品店_·_每日开店到闭店","title":"示例：饮品店 · 每日开店到闭店","subtitle":"虚构示例，用来演示分组 / 时间窗 / 状态 / 判断 / 风险点；把它改成你自己的流程即可","direction":"TD","groups":[{"id":"g1","label":"开店（08:00–09:30）","members":["s","a","b","c"]},{"id":"g2","label":"营业（09:30–21:00）","members":["d","e","f","g","h"]},{"id":"g3","label":"收尾（21:00–22:30）","members":["i","j","k","l"]}],"statusLabels":{"done":"已完成","doing":"进行中","todo":"待开始","risk":"需人工把关","hold":"阻塞/等素材"},"kinds":[{"key":"start","label":"起点"},{"key":"task","label":"环节"},{"key":"milestone","label":"关键检查点"},{"key":"decision","label":"判断"},{"key":"risk","label":"风险点"},{"key":"end","label":"终点"}],"nodes":[{"id":"s","label":"08:00 到店","kind":"start","kindLabel":"起点","status":"done","statusLabel":"已完成","time":"","owner":"","detail":"","note":"","preds":[],"succs":["a"]},{"id":"a","label":"开设备与巡检","kind":"task","kindLabel":"环节","status":"done","statusLabel":"已完成","time":"08:00–08:30","owner":"店长","detail":"咖啡机 / 制冰机 / 收银台 / 灭火器压力表","note":"","preds":["s"],"succs":["b"]},{"id":"b","label":"备料与试味","kind":"task","kindLabel":"环节","status":"done","statusLabel":"已完成","time":"08:30–09:10","owner":"后厨","detail":"研磨刻度、糖浆效期、试饮校准","note":"","preds":["a"],"succs":["c"]},{"id":"c","label":"开店前复检","kind":"milestone","kindLabel":"关键检查点","status":"doing","statusLabel":"进行中","time":"09:10–09:30","owner":"店长","detail":"卫生 / 价签 / 外卖平台接单状态","note":"复检不过先不开门，避免差评","preds":["b"],"succs":["d"]},{"id":"d","label":"09:30 开门营业","kind":"task","kindLabel":"环节","status":"doing","statusLabel":"进行中","time":"09:30–11:00","owner":"值班","detail":"","note":"","preds":["c"],"succs":["e"]},{"id":"e","label":"排队是否超过 8 单","kind":"decision","kindLabel":"判断","status":"todo","statusLabel":"待开始","time":"11:00–13:00","owner":"值班","detail":"判断要不要加开出杯位","note":"","preds":["d"],"succs":["f","g"]},{"id":"f","label":"开第二个出杯位","kind":"risk","kindLabel":"风险点","status":"risk","statusLabel":"需人工把关","time":"高峰","owner":"值班","detail":"临时加人，注意冰槽与杯盖库存","note":"库存不够时先限购单品","preds":["e"],"succs":["h"]},{"id":"g","label":"正常出杯","kind":"task","kindLabel":"环节","status":"todo","statusLabel":"待开始","time":"高峰","owner":"值班","detail":"","note":"","preds":["e"],"succs":["h"]},{"id":"h","label":"午后补货","kind":"task","kindLabel":"环节","status":"hold","statusLabel":"阻塞/等素材","time":"14:00–15:00","owner":"后厨","detail":"牛奶 / 冰块 / 杯具 / 封口膜","note":"等供应商到货，缺的先用替代品","preds":["f","g"],"succs":["i"]},{"id":"i","label":"21:00 停止接单","kind":"task","kindLabel":"环节","status":"todo","statusLabel":"待开始","time":"21:00","owner":"值班","detail":"","note":"","preds":["h"],"succs":["j"]},{"id":"j","label":"清洁与设备保养","kind":"task","kindLabel":"环节","status":"todo","statusLabel":"待开始","time":"21:00–22:00","owner":"后厨","detail":"磨豆机清粉、奶管冲洗、地面消毒","note":"","preds":["i"],"succs":["k"]},{"id":"k","label":"盘点与对账","kind":"task","kindLabel":"环节","status":"todo","statusLabel":"待开始","time":"22:00–22:20","owner":"店长","detail":"现金 / 平台流水 / 库存差异","note":"","preds":["j"],"succs":["l"]},{"id":"l","label":"22:30 闭店上报","kind":"end","kindLabel":"终点","status":"todo","statusLabel":"待开始","time":"","owner":"","detail":"日报发到门店群，异常单独标注","note":"","preds":["k"],"succs":[]}],"edges":[{"from":"s","to":"a","label":"","style":"solid"},{"from":"a","to":"b","label":"","style":"solid"},{"from":"b","to":"c","label":"","style":"solid"},{"from":"c","to":"d","label":"通过","style":"solid"},{"from":"d","to":"e","label":"","style":"solid"},{"from":"e","to":"f","label":"超过 8 单","style":"solid"},{"from":"e","to":"g","label":"未超过","style":"solid"},{"from":"f","to":"h","label":"","style":"solid"},{"from":"g","to":"h","label":"","style":"solid"},{"from":"h","to":"i","label":"","style":"solid"},{"from":"i","to":"j","label":"","style":"solid"},{"from":"j","to":"k","label":"","style":"solid"},{"from":"k","to":"l","label":"","style":"solid"}],"selfFile":"demo.html","flows":[{"file":"demo.html","title":"示例：饮品店 · 每日开店到闭店","nodes":13,"edges":13,"groups":3,"portrait":"577x2296","landscape":"1134x824","mtime":"<t>","mtimeMs":0}]}</script>
 <script>
 (function(){
@@ -1231,6 +1236,19 @@
   });
   // 抽屉首屏就是关闭态：立刻 inert，免得 Tab 一上来就钻进屏外的链接
   (function(){ var dr=document.getElementById('flows-drawer'); if(dr&&('inert' in dr)) dr.inert=true; })();
+  // B4：把"开关态"同步成 aria-pressed，读屏才念得出当前选中的版式 / 筛选项 / 是否锁定
+  function syncAria(){
+    document.querySelectorAll('[data-variant-btn]').forEach(function(b){
+      b.setAttribute('aria-pressed', b.classList.contains('on')?'true':'false');
+    });
+    document.querySelectorAll('.legend button[data-status]').forEach(function(b){
+      b.setAttribute('aria-pressed', b.classList.contains('off')?'false':'true');
+    });
+    var lk=document.getElementById('lock-btn');
+    if(lk) lk.setAttribute('aria-pressed', lk.classList.contains('on')?'true':'false');
+  }
+  document.addEventListener('click',function(){ setTimeout(syncAria,0); });
+  syncAria();
   wireNodeKeyboard();
   setVariant(autoVariant(), true);
   renderPanel(null);

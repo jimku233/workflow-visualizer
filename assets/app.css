@@ -192,3 +192,8 @@
   }
   .panel-btn{display:none}
   @media print{ header,aside,footer,#mmd-panel{display:none} #canvas{background:#fff} }
+
+  /* B6：系统开了"减少动态效果"就不做过渡/动画（抽屉、主题切换、缩放仍然可用，只是瞬时到位） */
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{transition:none!important;animation:none!important}
+  }
