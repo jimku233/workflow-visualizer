@@ -433,12 +433,12 @@ function parseMermaid(text, file = '<输入>', lineOffset = 0) {
       groupStack.push(g);
       continue;
     }
-    if (/^end\b/i.test(line)) {
-      if (!/^end$/i.test(line)) syntaxFail(file, stmt, 0, 'end 后存在不支持的内容');
+    if (/^end$/i.test(line)) {                       // 只有**光杆** end 才是分组结束
       if (!groupStack.length) syntaxFail(file, stmt, 0, '存在没有匹配 subgraph 的 end');
       groupStack.pop();
       continue;
     }
+    // 注意：`end((终点))` 这种是「节点 id 恰好叫 end」（真实流程里很常见），要继续往下按节点解析
 
     const { segments, links } = splitLinks(stmt, file);
     if (!segments.length) continue;
@@ -1251,6 +1251,15 @@ function mmdEdgeLabel(s) {
   return mmdLabel(String(s ?? '').replace(/\|/g, '\u2223'));
 }
 
+const MMD_RESERVED = new Set(['end', 'subgraph', 'graph', 'flowchart', 'class', 'classdef', 'style',
+  'linkstyle', 'click', 'direction', 'acctitle', 'accdescr']);
+
+/** Mermaid 的关键字不能当节点 id：`end((终点))` 在真实 Mermaid 里也会被当成分组结束，导出时统一改名。 */
+function safeId(id) {
+  const s = String(id);
+  return MMD_RESERVED.has(s.trim().toLowerCase()) ? s + '_' : s;
+}
+
 function toMermaid(spec) {
   const out = [];
   out.push('flowchart ' + (spec.direction === 'LR' ? 'LR' : 'TD'));
@@ -1267,16 +1276,16 @@ function toMermaid(spec) {
   spec.groups.forEach((g, gi) => {
     out.push('  subgraph ' + mmdLabel(g.label || g.id));
     for (const m of g.members) {
-      out.push('    ' + m + shapeOf(nodeById.get(m)));
+      out.push('    ' + safeId(m) + shapeOf(nodeById.get(m)));
       emitted.add(m);
     }
     out.push('  end');
     void gi;
   });
-  for (const n of spec.nodes) if (!emitted.has(n.id)) out.push('  ' + n.id + shapeOf(n));
+  for (const n of spec.nodes) if (!emitted.has(n.id)) out.push('  ' + safeId(n.id) + shapeOf(n));
   for (const e of spec.edges) {
     const arrow = e.style === 'dashed' ? '-.->' : '-->';
-    out.push('  ' + e.from + ' ' + arrow + (e.label ? '|' + mmdEdgeLabel(e.label) + '|' : '') + ' ' + e.to);
+    out.push('  ' + safeId(e.from) + ' ' + arrow + (e.label ? '|' + mmdEdgeLabel(e.label) + '|' : '') + ' ' + safeId(e.to));
   }
   return out.join('\n') + '\n';
 }
@@ -1481,10 +1490,16 @@ function scanFlowsWithVersion(dir) {
 async function cmdRefresh(dir, flags) {
   const target = resolve(dir || '.');
   if (!existsSync(target)) fail('目录不存在：' + target);
-  const specs = readdirSync(target).filter((f) => /\.(json|mmd|markdown|md)$/i.test(f)).filter((f) => {
-    if (/^流程索引\.json$/i.test(f)) return false;
-    if (!/\.json$/i.test(f)) return true;
+  const all = readdirSync(target);
+  const isSpecJson = (f) => {
     try { const j = JSON.parse(readFileSync(join(target, f), 'utf8')); return j && Array.isArray(j.nodes) && j.nodes.length > 0; } catch (e) { return false; }
+  };
+  const specs = all.filter((f) => /\.(json|mmd|markdown|md)$/i.test(f)).filter((f) => {
+    if (/^流程索引\.json$/i.test(f)) return false;
+    if (/\.json$/i.test(f)) return isSpecJson(f);
+    // 同名有 .json 规格时跳过 .mmd/.md —— 那些多半是本 skill 导出的产物，拿它当源会丢 id/形状
+    const base = f.replace(/\.(mmd|markdown|md)$/i, '');
+    return !all.includes(base + '.json');
   });
   if (!specs.length) { process.stdout.write('flow: 这个目录里没有可刷新的规格文件（*.json 含 nodes / *.mmd）\n'); return 0; }
   let n = 0;
