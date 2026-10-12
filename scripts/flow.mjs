@@ -16,7 +16,7 @@
  *   node flow.mjs help
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync, rmSync } from 'node:fs';
 import { dirname, resolve, extname, basename, join } from 'node:path';
 import { buildHome } from './serve.mjs';
 
@@ -1260,8 +1260,12 @@ function safeId(id) {
   return MMD_RESERVED.has(s.trim().toLowerCase()) ? s + '_' : s;
 }
 
+/** 导出件首行的标记：告诉 refresh「这是产物、不是源」，别拿它重渲染（会丢 time/owner/detail/note） */
+const MMD_EXPORT_MARK = '%% workflow-visualizer 导出件（不是源文件；要改流程请改 .json，或直接改这个 .mmd 并删掉本行）';
+
 function toMermaid(spec) {
   const out = [];
+  out.push(MMD_EXPORT_MARK);
   out.push('flowchart ' + (spec.direction === 'LR' ? 'LR' : 'TD'));
   const shapeOf = (n) => {
     const t = mmdLabel(n.label);
@@ -1494,9 +1498,13 @@ async function cmdRefresh(dir, flags) {
   const isSpecJson = (f) => {
     try { const j = JSON.parse(readFileSync(join(target, f), 'utf8')); return j && Array.isArray(j.nodes) && j.nodes.length > 0; } catch (e) { return false; }
   };
+  const isExport = (f) => {
+    try { return readFileSync(join(target, f), 'utf8').slice(0, 400).includes('workflow-visualizer 导出件'); } catch (e) { return false; }
+  };
   const specs = all.filter((f) => /\.(json|mmd|markdown|md)$/i.test(f)).filter((f) => {
     if (/^流程索引\.json$/i.test(f)) return false;
     if (/\.json$/i.test(f)) return isSpecJson(f);
+    if (isExport(f)) return false;                 // 本 skill 导出的产物：不是源
     // 同名有 .json 规格时跳过 .mmd/.md —— 那些多半是本 skill 导出的产物，拿它当源会丢 id/形状
     const base = f.replace(/\.(mmd|markdown|md)$/i, '');
     return !all.includes(base + '.json');
@@ -1512,6 +1520,11 @@ async function cmdRefresh(dir, flags) {
     await cmdRender(spec, isMmdSource
       ? { out, svg: join(target, base + '-竖版.svg'), wrap: flags.wrap }
       : { out, all: true, wrap: flags.wrap });
+    if (isMmdSource) {
+      // --svg x.svg 的约定会再写一个 x-横版.svg；对 mmd 源来说就成了 "<base>-竖版-横版.svg"，清掉它
+      const stray = join(target, base + '-竖版-横版.svg');
+      if (existsSync(stray) && !/竖版-竖版/.test(base)) { try { rmSync(stray); } catch (e) { /* 删不掉就算了 */ } }
+    }
     n++;
   }
   process.stdout.write(`flow: 已刷新 ${n} 张流程图 → ${target}\n`);
