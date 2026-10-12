@@ -32,9 +32,15 @@
   :root{--ff:'Segoe UI','Microsoft YaHei',system-ui,-apple-system,sans-serif;
     --bg:#12161d;--panel:#171d26;--panel2:#1d242f;--panel3:#232b37;--text:#eaeef5;--muted:#9aa5b8;--line:#2a3341;--line2:#35404f;
     --accent:#5aa9ff;--accent-soft:#5aa9ff24;--warn:#eab24a;--risk:#f4676c;--ok:#46c886;
+    /* --hit 必须在这里也定义一份：搜索命中清单在 <aside> 里，拿不到 svg.css 里定义在 <svg> 上的同名变量
+       （原来只定义在 SVG 作用域 → .hit-row 的三条规则全部失效：关键词没底色、当前行没描边、序号圆点没底色） */
+    --hit:#4a9dff;
     --shadow:0 1px 2px rgba(0,0,0,.36),0 10px 26px rgba(0,0,0,.22)}
   html[data-theme='light']{--bg:#e8dbc4;--panel:#f7efdf;--panel2:#f2e8d6;--panel3:#e2d3b8;--text:#2b2721;--muted:#6f6553;--line:#dccbaa;--line2:#c6b28e;
     --accent:#bf6b3a;--accent-soft:#bf6b3a1f;--warn:#b8801a;--risk:#c2403f;--ok:#35935f;
+    /* 浅色下页面用的命中色比 SVG 里的 #2b7fe0 更深：#2b7fe0 对 panel3 只有 2.73:1（非文本需 ≥3:1），
+       #1a5fb0 对 panel3 4.31、panel2 5.23、panel 5.55（对比度由 tools/contrast.py 复算） */
+    --hit:#1a5fb0;
     --shadow:0 1px 2px rgba(93,74,45,.13),0 10px 26px rgba(93,74,45,.13)}
   /* 缩小时画布也跟着加深一档，让近白色的方块浮出来（节点底/画布 1.34→1.40，刻意只加一点点） */
   html[data-theme='light'] body:has(svg.zoomed-out){--bg:#e4d7bb;--panel3:#ddcdab}
@@ -125,7 +131,7 @@
   .hit-row .hr-n{flex:0 0 auto;width:18px;height:18px;border-radius:50%;background:var(--panel3);color:var(--muted);
     font-size:11px;display:inline-flex;align-items:center;justify-content:center;margin-top:1px}
   .hit-row.cur{border-color:var(--hit);background:var(--panel3)}
-  .hit-row.cur .hr-n{background:var(--hit);color:#fff}
+  .hit-row.cur .hr-n{background:transparent;color:var(--text);box-shadow:inset 0 0 0 1.5px var(--hit)}
   .hit-row .hr-main{display:flex;flex-direction:column;min-width:0}
   .hit-row em{font-style:normal;font-size:10.5px;color:var(--muted);margin-left:6px;white-space:nowrap}
   .hit-row .hr-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
