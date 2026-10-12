@@ -136,6 +136,19 @@ const SHELL = loadAsset('shell.html');                     // renderHtml() 里�
 
 **已完成**：首页 CSS/JS 与 HTML 骨架也拆出来了（`assets/home.css`、`assets/home.js`、`assets/shell.html`）——前端 100% 是独立文件，`scripts/*.mjs` 里只剩加载与替换。
 
+**运行时会加/改的 DOM（别当成后端生成的标记）**
+
+| 位置 | 运行时的属性/类 | 谁加 |
+|---|---|---|
+| `.node` | `tabindex="0"`、`role="button"`、`aria-label`（标签＋状态＋时间） | app.js（导出 SVG 时清掉） |
+| `#flows-drawer` | `role="dialog"`、`aria-modal="true"`、`aria-label`、`aria-hidden`、`inert`（关闭态） | shell.html + app.js |
+| `#flows-toggle` | `aria-controls="flows-drawer"`、`aria-expanded` | shell.html + app.js |
+| `.band-label` / `.band-count` | `fill="组色"` 与 `style="--c:组色"` | flow.mjs（浅色主题靠 `--c` 压深） |
+| 主题令牌 | `--hit`、`--accent-text`、`--ok-text`、`--warn-text`、`--risk-text` | assets/app.css（`tools/tests/contrast.mjs` 守门） |
+| 产物 meta | `<meta name="flow-version">` | flow.mjs；`流程索引.json` 里是 `generatorVersion` 与每项 `version` |
+
+**更新语义（不要破坏）**：产物是自包含快照、**永远不会自动更新**；版本对不上的文件由首页标成「旧版渲染」，用 `flow.mjs refresh <目录>` 批量重渲。
+
 ## 8. 改动后的回归清单
 
 ```bash

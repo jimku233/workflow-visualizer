@@ -302,3 +302,20 @@ node "scripts\serve.mjs" ".\out" 8765
 50. **工作区里"删不掉文件"多半是设计如此，不是 bug**：根目录上有 `Everyone:(CI)(DENY)(DC)`（DC = 删除子项），所以**任何**账号（含你自己）都删不掉工作区里已有的文件/子目录——DSH 用它保证 agent 不能删你的东西；`serve.mjs` 的"回收站"端点在受限沙箱里同样会失败（移文件也算删除）。要删文件只有三条路：资源管理器里手动删（同意 UAC/提权后仍受该 DENY 约束，实际上同样会失败）、把 DSH 会话切到 full access、或让 DSH 自己清理。**别把它当成 ACL 坏了反复修。**
 
 - 样例产物：`.\out\`（`示例-饮品店日常.html`、`示例-报销审批.html`、`index.html`、`流程索引.json`）。
+
+## 七、2026-10 新增：版本号 / 批量刷新 / 解析契约 / 可访问性
+
+- **批量刷新**：`node scripts/flow.mjs refresh <目录>` —— 扫目录里所有规格（`*.json` 含 `nodes`、`*.mmd`/`*.md`）重渲染，并重建「流程索引.json」与静态首页。产物多时用它。
+- **版本与「旧版」提示**：产物写 `<meta name="flow-version" content="x.y.z">`（渲染器常量 `FLOW_VERSION`），清单记 `generatorVersion` 与每项 `version`；首页把版本不符的卡片标成「旧版渲染」并提示跑 `refresh`。**改了渲染或前端行为就 +1**。
+- **产物不会自动更新**：自包含快照、离线无 CDN。要更新必须重渲染（或让 agent 干）。
+- **解析契约**：退出码 `0/1/2`（成功 / check 有结构问题 / 参数或输入错误）；错误格式 `flow: 文件:行:列: 说明`；未知参数直接报错，不静默。
+- **无害指令白名单**：`classDef / class / style / linkStyle / click / direction / accTitle / accDescr` 忽略并提示；其余不支持语法继续报错。
+- **四道回归门**（`tools/tests/`，零依赖）：`parse-errors.mjs`（14 例解析契约）、`mermaid-roundtrip.mjs`（4 例往返）、`contrast.mjs`（主题对比度）、`regress.mjs check demo`（几何 + 逐字节产物回归）。
+
+新增踩坑：
+
+51. **`--hit` 只定义在 `<svg>` 里 → 页面 CSS 拿不到**：搜索结果清单在 `<aside>`（SVG 外），`var(--hit)` 解析失败会让「关键词底色 / 当前行描边 / 序号圆点」三条规则**静默失效**。自定义属性必须在**使用处的作用域**（或 `:root`）也有定义。
+52. **`visibility:hidden` 的过渡延迟会让「打开即聚焦」失效**：抽屉用 `transition:visibility 0s .18s` 收起，打开那一瞬 `visibility` 仍是 `hidden`（过渡取自**变更前**的状态），`focus()` 直接失败。要把关闭态移出 Tab 序，用 `inert`（立刻生效、不动动画）。
+53. **`color-mix` 的比例是「加入的颜色占比」**：`color-mix(in srgb, 组色 53%, 墨色)` 是 53% 组色——比例越大越**浅**。压深浅色主题时方向搞反过一次，被 `contrast.mjs` 当场抓住（最低只有 3.39:1）。**配色改动一律先跑对比度门。**
+54. **同一文件的多处替换不能「先全部算好再一起写」**：每次写盘都基于**原始内容**，后一条会覆盖前一条。正确做法是逐条「读—改—写」。这个坑让我丢过一次改动（表现为「补丁报成功但功能没生效」）。
+55. **PowerShell 的 `[System.IO.File]::ReadAllText` 用的是进程工作目录**，不是 `cd` 之后的 PowerShell 位置；变量名大小写不敏感，`$T`（目录）被 `$t`（文件内容）覆盖过一次，于是把文件内容当路径用了。跨目录写文件一律用绝对路径。

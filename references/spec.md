@@ -9,6 +9,7 @@ node flow.mjs render  <spec.json|spec.mmd|spec.md> [--out x.html] [--all] [--wra
 node flow.mjs mermaid <spec.json> [--out x.mmd]      # 只导 Mermaid 源码；不带 --out 就打到 stdout
 node flow.mjs check   <spec.json|spec.mmd|spec.md>   # 结构检查
 node flow.mjs preview <流程图.html> [--out 对照预览.html]  # 并排 iframe 看手机/电脑两版
+node flow.mjs refresh <目录>                         # 批量重渲染目录里所有规格，再重建清单与静态首页
 node flow.mjs index   <目录>                         # 重建「全部流程图」清单（页面右上角抽屉用）
 node flow.mjs sample  [--out sample.json]            # 写出一份完整示例规格
 node flow.mjs help
@@ -24,7 +25,7 @@ node flow.mjs help
 - 输入扩展名决定解析方式：`.json` → JSON 规格；`.mmd`/`.mermaid` → Mermaid；`.md` → 抽取第一个 ` ```mermaid ` 代码块（没有就把全文当 Mermaid）。
 - 不带 `--out` 时，产物写在**输入文件同目录**、同名 `.html`。**一次 render 输出两个版式**到同一个 HTML。
 - `--all` 额外写 `<名>.mmd`、`<名>-竖版.svg`、`<名>-横版.svg`；`--svg x.svg` 时第二个是 `x-横版.svg`。
-- `--wrap N` 覆盖横版的「每栏行数」（`0` = 不分栏，横版与竖版相同；`N≥2` = 固定 N 行）。
+- `--wrap N` 覆盖横版的「每栏行数」（`0` = 不分栏，横版与竖版相同；`N≥1` = 固定每栏 N 行，`N=1` 表示一栏一个节点）。非整数/负数**直接报错**，不会静默归零。
 - `--debug` 打印两版各自的栏数/行数与各栏成员，布局不合预期时先看它。
 - 退出码：`0` 正常；`1` 是 `check` 发现结构问题；`2` 是参数或输入错误。输入诊断格式为 `flow: 文件:行:列: 说明`。
 - 附带 `tools/devshot.mjs`：用 CDP 设备模拟给页面拍手机/电脑两张图，并打印 canvas/aside/footer 的实际高度与自动选中的版式（需调试浏览器在 9222）。
@@ -107,12 +108,13 @@ flowchart TD
 | 链式 `A --> B --> C --> D` | ✅ |
 | `subgraph 名称` … `end` | ✅ 变成分组带 |
 | `%%` 注释 | ✅ 忽略 |
-| `classDef` / `class` / `style` / `linkStyle` / `click` / `direction` | ❌ 明确报错（带文件、行、列） |
+| `classDef` / `class` / `style` / `linkStyle` / `click` / `direction` / `accTitle` / `accDescr` | ✅ 忽略（对渲染语义无影响；命令行会提示「已忽略…」，从别处粘来的片段可以直接画） |
 | `A & B --> C`（多节点连接） | ❌ 不支持 |
 
 要点：
 - Mermaid 只能表达**结构**（节点、连线、分组）。时间窗、负责人、状态、说明这些**只能在 JSON 里给**——需要这些就别用 Mermaid 输入。
 - 标签中的分号、引号和括号按形状/引号边界扫描；未闭合形状、未配对的 `subgraph/end`、不支持的语法会明确报错并标出文件、行、列。
+- 节点/分组标签含 `[ ] { } ( ) | "` 时，导出的 Mermaid 用双引号包起来（解析侧会还原）；**边标签里的 `|` 会换成视觉等价的 `∣`（U+2223）**，因为 `|…|` 语法装不下竖线。
 - 图片里带 `"` 的标签没问题（`E(标注"真题改编")` 实测正确保留）。
 - 从 JSON 导出的 `.mmd` 再解析回来是幂等的：`{}` 判断、`-.->` 虚线、`|标签|`、`subgraph` 都能保住（已实测）。
 
@@ -168,6 +170,24 @@ flowchart TD
 - 深色主题不需要这一档（连线本来就 6.85:1）；手机竖版默认是宽度自适应，通常不会触发，细节不丢。
 
 为什么用 `:has()`：`.zoomed-out` 类挂在 `<svg>` 上，而画布是它的**祖先**节点，只能反向选择；Chromium 105+ / Edge 105+ 支持（本项目本来就只面向 Edge/Chrome）。
+
+
+
+**页面 UI 的对比度（`assets/app.css`，由 `tools/tests/contrast.mjs` 复算）**
+
+| 令牌 | 深色 | 浅色 | 说明 |
+|---|---|---|---|
+| `--muted` | #9aa5b8（5.74:1） | #645b4b（4.54:1） | 次要文字；浅色下必须比原来深 |
+| `--accent-text` | = `--accent`（5.81:1） | #884c29（4.58:1） | **文字专用**；圆点/描边继续用原色 `--accent` |
+| `--ok-text` / `--warn-text` / `--risk-text` | = 原色 | #256843 / #795411 / #a43534 | 状态 chip 的文字色 |
+| `--hit` | #4a9dff（5.13:1） | #1a5fb0（4.31:1，非文本） | 搜索命中；**必须在页面作用域再定义一份**，SVG 里那份 `<aside>` 拿不到 |
+
+**SVG 内的分组带标题**：深色沿用组色调色板（亮色在深底上清楚）；**浅色必须压深**——
+`svg[data-theme='light'] .band-label, .band-count{fill:color-mix(in srgb, var(--c) 41%, #241f19)}`
+（渲染时把组色同时输出成 `--c`）。原色对「7.5% 组色浅底」只有 1.31–2.08:1，混深后 4.53–5.72:1 全部达标。
+
+**可访问性**：`.node` 运行时加 `tabindex="0"` `role="button"` `aria-label`（Tab 可达、Enter/空格选中），导出 SVG 时会清掉这三个属性；
+`#flows-drawer` 是 `role="dialog" aria-modal="true"`，关闭态用 `inert` 移出 Tab 序；全站 `:focus-visible` 焦点环用 `--accent-text`。
 
 
 ## 五、产物里有什么
