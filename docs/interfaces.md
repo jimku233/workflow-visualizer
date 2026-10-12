@@ -100,19 +100,36 @@ node serve.mjs <目录> [端口]           # 默认 8765
 - `POST */__flow/act` → 仅**本机回环**（`req.socket.remoteAddress`），接受 `{op:'trash'|'rename', …}`；删除＝移进 `.trash-YYYY-MM-DD/`，**绝不真删**
 - 不得引入写权限之外的能力（上传、执行、任意路径读写）——它会被暴露到局域网
 
-## 7. 前端资产边界（建议的拆分方向）
+## 7. 前端资源与内联契约（已完成拆分）
 
-现在前端（CSS / 页面 JS / HTML 外壳）以**字符串模板**内联在 `flow.mjs`（`svgStyle()`、`CLIENT_JS`、`renderHtml()`）与 `serve.mjs`（首页 `<style>` + `homeScript()`）里，约占 1300+ 行。建议拆成真实文件、渲染时再内联：
+前端不再以字符串模板内联在 `flow.mjs` 里，而是**真实文件 + 渲染时内联**：
 
 ```
-assets/app.css        # 流程图页面的 CSS（含明暗变量）
-assets/app.js         # 流程图页面的客户端 JS
-assets/shell.html     # HTML 外壳（只留占位符）
-assets/home.css       # 首页 CSS
-assets/home.js        # 首页 JS
+assets/app.js      页面交互 JS（视图/缩放、选中、搜索命中导航、主题、导出、手机抽屉、触屏手势）
+assets/app.css     流程图页面的整页 CSS（含移动端断点 <960px / <600px）
+assets/svg.css     SVG 内的主题变量与"缩小简化"规则，含 {{vid}} 占位（每版式一份 SVG，id 要带后缀）
 ```
 
-要求：拆分后 `render` 的产物**字节级等价或仅差空白**，仍是单文件；`SKILL.md` / `spec.md` 里的路径引用同步更新。
+`scripts/flow.mjs` 里的加载契约（约 10 行）：
+
+```js
+const ASSET_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets');
+const assetCache = new Map();
+const loadAsset = (name) => { if (!assetCache.has(name)) assetCache.set(name, readFileSync(join(ASSET_DIR, name), 'utf8')); return assetCache.get(name); };
+
+const CLIENT_JS = loadAsset('app.js');                     // 原样内联成 <script>
+function svgStyle(vid) { return loadAsset('svg.css').replace(/\{\{vid\}\}/g, vid); }   // {{vid}} → portrait / landscape
+// renderHtml 里：<style>${loadAsset('app.css')}</style>
+```
+
+**硬要求**
+
+1. 产物必须仍是**单文件自包含 HTML**（CSS / JS / 数据全部内联），`file://` 双击可用；
+2. 改完 assets 后，`render` 的产物应与改动前**忽略渲染时间戳后逐字节相同**（除非你就是要改行为）——用 `_verify/regress.mjs` 判定；
+3. `svg.css` 里凡是带 `-${vid}` 的 id（filters / markers / patterns / `#vp`）一律写 `{{vid}}`，不要写死 `portrait`；
+4. 仍**不允许**引入构建步骤、npm 依赖或运行时网络请求 —— 内联在渲染时由 Node 完成，一次性。
+
+**还没拆的两块**（下一步可做）：`serve.mjs` 首页的 CSS/JS（`buildHome()` 的 `<style>` 与 `homeScript()`，约 25 KB）、`flow.mjs` 里 `renderHtml()` 的 HTML 外壳骨架（动态插值约 30 处）。
 
 ## 8. 改动后的回归清单
 
