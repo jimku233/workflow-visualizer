@@ -401,7 +401,10 @@ ${c.stale ? '<span class="badge stale">旧版渲染</span>' : ''}
   const body = diagBox(build, diag)
     + homeHeader(cards.length, crumbHtml, rootPath, join(rootPath, FLOW_MANIFEST_NAME))
     + dupBox(dups, !!opts.canAct)
-    + (cards.some((c) => c.stale) ? `<div class="tip"><b>有 ${cards.filter((c) => c.stale).length} 个文件是旧版渲染的</b>（渲染器 v${generatorVersion || '?'}）<div class="row"><span class="k">怎么更新</span><span>在项目里跑 <code>node scripts/flow.mjs refresh &lt;目录&gt;</code>，会批量重渲染并重建这个首页</span></div></div>` : '')
+    + `<div class="tip"><b>workflow-visualizer v${generatorVersion || '?'}</b>`
+              + ` · 文档在这个技能目录里（用编辑器打开）：<code>README.md</code> 给人看 · <code>SKILL.md</code> 给 agent 看 · <code>CHANGELOG.md</code> 改了什么`
+              + (cards.some((c) => c.stale) ? `<div class="row"><span class="k">有 ${cards.filter((c) => c.stale).length} 个文件是旧版渲染的</span><span>跑 <code>node scripts/flow.mjs refresh &lt;目录&gt;</code> 全部刷新</span></div>` : '')
+              + '</div>'
       + (cards.length ? `<div class="grid">${cards.map(card).join('')}</div>` : '<small>这个目录里还没有流程图</small>')
     + (dirs.length ? `<p class="st2">子目录</p>` + dirs.map(({ e, href }) => `<a class="file" href="${href}">📁 ${e.name}</a>`).join('') : '')
     + (others.length ? `<p class="st2">其它文件（矢量图 / Mermaid 源码 / 清单）</p><div class="plain">${others.map(({ e, href }) => `<a href="${href}">${e.name}</a>`).join('')}</div>` : '')
