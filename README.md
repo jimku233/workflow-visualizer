@@ -4,6 +4,8 @@
 
 本仓库根目录**就是** [Agent Skill](https://code.claude.com/docs/en/skills) 目录（`SKILL.md` 在根上），`git clone` 到技能发现路径即可用。
 
+想先看效果：直接双击 [`docs/demo.html`](docs/demo.html)（用 `examples/` 里的中性示例渲染出来的完整产物，单文件、离线可开）。
+
 ![竖版（手机）](docs/screenshot-portrait.png)
 ![横版（电脑）](docs/screenshot-landscape.png)
 
