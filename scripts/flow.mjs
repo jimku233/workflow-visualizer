@@ -180,7 +180,13 @@ function parseMermaid(text) {
 
       // 连线标签写在下一段开头：-->|有|
       const lm = /^\|([^|]*)\|/.exec(spec0);
-      if (lm) { pendingLabel = lm[1].trim(); spec0 = spec0.slice(lm[0].length).trim(); }
+      if (lm) {
+        pendingLabel = lm[1].trim();
+        if (pendingLabel.length > 1 && pendingLabel.startsWith('"') && pendingLabel.endsWith('"')) {
+          pendingLabel = pendingLabel.slice(1, -1).replace(/&quot;/g, '"');
+        }
+        spec0 = spec0.slice(lm[0].length).trim();
+      }
 
       if (spec0) {
         const nm = /^([A-Za-z0-9_\u4e00-\u9fff][\w\u4e00-\u9fff.\-]*)\s*(\(\([\s\S]*\)\)|\[\[[\s\S]*\]\]|\{\{[\s\S]*\}\}|\[[\s\S]*\]|\([\s\S]*\)|\{[\s\S]*\})?/.exec(spec0);
@@ -197,6 +203,7 @@ function parseMermaid(text) {
             label = label.trim();
             const q = label[0];
             if ((q === '"' || q === "'") && label.length > 1 && label.endsWith(q)) label = label.slice(1, -1).trim();
+      label = label.replace(/&quot;/g, '"');
             touch(id, label, kind);
           } else {
             touch(id);
@@ -243,7 +250,9 @@ function parseMermaid(text) {
 
 /** 从 .md 中抽出 ```mermaid 代码块；没有就整篇当 mermaid。 */
 function extractMermaid(text) {
-  const m = /```(?:mermaid)?\s*\n([\s\S]*?)```/.exec(text);
+  // 只认带 mermaid 语言标记的围栏；没有围栏时把整段文本当 Mermaid（保留旧行为）。
+  // 原来写成 (?:mermaid)? —— Markdown 里**前面**的普通代码块会被当成 Mermaid 抓走。
+  const m = /```mermaid[ \t]*\r?\n([\s\S]*?)```/i.exec(text);
   return m ? m[1] : text;
 }
 
@@ -331,6 +340,13 @@ function normalize(specIn) {
   return spec;
 }
 
+/** 分组标题（药丸 + "N 步"计数）的尺寸。布局阶段算包围盒、SVG 阶段画药丸，必须共用同一套算法。 */
+function bandTitleMetrics(label, countText) {
+  const labelW = units(label) * 12.4 + 26;
+  const countW = textW(countText, 11) + 2;
+  return { labelW, countW, gap: 8, totalW: labelW + 8 + countW, minBandW: 26 + labelW + 8 + countW };
+}
+
 function analyze(spec) {
   const byId = new Map(spec.nodes.map((n) => [n.id, n]));
   const out = new Map(spec.nodes.map((n) => [n.id, []]));
@@ -356,7 +372,7 @@ function analyze(spec) {
 // ─────────────────────────────────────────────────────────────
 
 function layout(spec, opts = {}) {
-  const { out, inc, back } = analyze(spec);
+  const { byId, out, inc, back } = analyze(spec);
   const layers = new Map();
 
   const depth = new Map();
@@ -473,8 +489,8 @@ function layout(spec, opts = {}) {
   let backIdx = 0;
   let busIdx = 0;
   for (const e of spec.edges) {
-    const a = byIdish(spec, e.from);
-    const b = byIdish(spec, e.to);
+    const a = byId.get(e.from);
+    const b = byId.get(e.to);
     if (e.from === e.to) {
       const x = a._cx + a.w / 2;
       edgePaths.push({ edge: e, kind: 'cubic', pts: [[x, a._cy - 8], [x + 46, a._cy - 34], [x + 46, a._cy + 34], [x, a._cy + 8]] });
@@ -523,7 +539,7 @@ function layout(spec, opts = {}) {
     const color = g.color || GROUP_PALETTE[gi % GROUP_PALETTE.length];
     const byCol = new Map();
     for (const id of g.members) {
-      const n = byIdish(spec, id);
+      const n = byId.get(id);
       const c = n._col ?? 0;
       if (!byCol.has(c)) byCol.set(c, []);
       byCol.get(c).push(n);
@@ -535,7 +551,7 @@ function layout(spec, opts = {}) {
       const cxMin = Math.min(...members.map((n) => n._cx - n.w / 2));
       const cxMax = Math.max(...members.map((n) => n._cx + n.w / 2));
       // 分组框至少要装得下自己的标题（药丸 + 计数，二者居中后左右各留 13）
-      const needW = 26 + (units(label) * 12.4 + 26) + 8 + (textW(members.length + ' 步', 11) + 2);
+      const needW = bandTitleMetrics(label, members.length + ' 步').minBandW;
       // 标题比节点列还宽时**左右对称外扩**：只往右长会让节点列贴在左边，小节看着不居中
       const extra = Math.max(0, needW - (cxMax - cxMin + 40));      const x0 = cxMin - 20 - Math.floor(extra / 2);
       let x1 = cxMax + 20 + Math.ceil(extra / 2);
@@ -585,10 +601,6 @@ function pickWrapRows(L, rowWidths, rowHeights, targetAspect) {
     if (score < bestScore - 1e-9) { bestScore = score; best = R; }
   }
   return best;
-}
-
-function byIdish(spec, id) {
-  return spec.nodes.find((n) => n.id === id);
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -743,8 +755,9 @@ function renderSvg(L, vid = 'v', head = true) {
     parts.push(`<rect class="band-bg" x="${(ox + b.x).toFixed(1)}" y="${(oy + b.y).toFixed(1)}" width="${b.w.toFixed(1)}" height="${b.h.toFixed(1)}" rx="16" fill="${b.color}" fill-opacity="0.075" stroke="${b.color}" stroke-opacity="0.46"/>`);
     if (b.label) {
       const countText = b.members.length + ' 步';
-      const lw = units(b.label) * 12.4 + 26;
-      const cw = textW(countText, 11) + 2;
+      const bm = bandTitleMetrics(b.label, countText);
+      const lw = bm.labelW;
+      const cw = bm.countW;
       // 药丸 + 计数 作为一组在带内水平居中
       const lx = ox + b.x + Math.max(13, (b.w - (lw + 8 + cw)) / 2);
       const ly = oy + b.y + 10;
@@ -995,11 +1008,26 @@ ${CLIENT_JS}
 // Mermaid 导出
 // ─────────────────────────────────────────────────────────────
 
+/** Mermaid 标签转义：含分隔符时用双引号包起来（与 parseMermaid 的反解规则配套）。 */
+const MMD_SPECIAL = /[\[\]{}()|"]/;
+function mmdLabel(s) {
+  const t = String(s ?? '');
+  return MMD_SPECIAL.test(t) ? '"' + t.replace(/"/g, '&quot;') + '"' : t;
+}
+
+/**
+ * 边标签专用：Mermaid 的 |...| 里没法放竖线（连引号也救不了 —— 解析器会在第一个 | 处截断），
+ * 所以把 | 换成视觉等价的 ∣（U+2223）。节点/分组标签没这个问题，继续用 mmdLabel 的引号方案。
+ */
+function mmdEdgeLabel(s) {
+  return mmdLabel(String(s ?? '').replace(/\|/g, '\u2223'));
+}
+
 function toMermaid(spec) {
   const out = [];
   out.push('flowchart ' + (spec.direction === 'LR' ? 'LR' : 'TD'));
   const shapeOf = (n) => {
-    const t = n.label;
+    const t = mmdLabel(n.label);
     if (n.kind === 'decision') return `{${t}}`;
     if (n.kind === 'start' || n.kind === 'end') return `((${t}))`;
     return `[${t}]`;
@@ -1009,7 +1037,7 @@ function toMermaid(spec) {
   spec.groups.forEach((g, i) => g.members.forEach((m) => inGroup.set(m, i)));
   const emitted = new Set();
   spec.groups.forEach((g, gi) => {
-    out.push('  subgraph ' + (g.label || g.id));
+    out.push('  subgraph ' + mmdLabel(g.label || g.id));
     for (const m of g.members) {
       out.push('    ' + m + shapeOf(nodeById.get(m)));
       emitted.add(m);
@@ -1020,7 +1048,7 @@ function toMermaid(spec) {
   for (const n of spec.nodes) if (!emitted.has(n.id)) out.push('  ' + n.id + shapeOf(n));
   for (const e of spec.edges) {
     const arrow = e.style === 'dashed' ? '-.->' : '-->';
-    out.push('  ' + e.from + ' ' + arrow + (e.label ? '|' + e.label + '|' : '') + ' ' + e.to);
+    out.push('  ' + e.from + ' ' + arrow + (e.label ? '|' + mmdEdgeLabel(e.label) + '|' : '') + ' ' + e.to);
   }
   return out.join('\n') + '\n';
 }
@@ -1029,6 +1057,9 @@ function toMermaid(spec) {
 // CLI
 // ─────────────────────────────────────────────────────────────
 
+const BOOL_FLAGS = new Set(['all', 'help', 'debug', 'single']);
+const VALUE_FLAGS = new Set(['out', 'svg', 'mmd', 'wrap', 'port']);
+
 function parseArgs(argv) {
   const flags = {};
   const rest = [];
@@ -1036,13 +1067,17 @@ function parseArgs(argv) {
     const a = argv[i];
     if (a.startsWith('--')) {
       const key = a.slice(2);
-      if (key === 'all' || key === 'help' || key === 'debug' || key === 'single') { flags[key] = true; continue; }
+      if (BOOL_FLAGS.has(key)) { flags[key] = true; continue; }
+      if (!VALUE_FLAGS.has(key)) {
+        fail('未知参数：--' + key + '（可用：' + [...BOOL_FLAGS, ...VALUE_FLAGS].map((k) => '--' + k).join(' / ') + '）');
+      }
       const val = argv[i + 1];
       if (val === undefined || val.startsWith('--')) fail('参数 --' + key + ' 缺少取值');
       flags[key] = val;
       i++;
     } else rest.push(a);
   }
+  if (rest.length > 1) fail('多余的位置参数：' + rest.slice(1).join(' ') + '（每个命令只接受一个输入路径）');
   return { flags, rest };
 }
 
@@ -1098,7 +1133,11 @@ function scanFlows(dir) {
 
 async function cmdRender(input, flags) {
   const spec = normalize(loadSpec(input));
-  const baseWrap = flags.wrap !== undefined ? Math.max(0, Number(flags.wrap) || 0) : (spec.wrap ?? 0);
+  // 0=关闭分栏；N=横版每栏 N 行（N=1 合法，表示每栏一个节点），负数/非整数直接报错
+  if (flags.wrap !== undefined && !/^\d+$/.test(String(flags.wrap).trim())) {
+    fail('--wrap 需要 ≥0 的整数：0=关闭分栏，N=横版每栏 N 行');
+  }
+  const baseWrap = flags.wrap !== undefined ? Number(flags.wrap) : (spec.wrap ?? 0);
 
   // 两个版式各自独立布局（structuredClone 隔离坐标，避免互相覆盖）
   const Lp = layout(structuredClone(spec), { wrap: baseWrap });
@@ -1283,7 +1322,8 @@ function cmdCheck(input) {
   if (back.size) process.stdout.write('  ↺ 检测到 ' + back.size + ' 条回边（会走右侧旁路渲染）\n');
   if (!problems.length) process.stdout.write('  ✓ 结构检查通过\n');
   else for (const p of problems) process.stdout.write('  ! ' + p + '\n');
-  return 0;
+  // 退出码契约：0=通过 / 1=结构问题 / 2=参数或输入错误（fail()）
+  return problems.length ? 1 : 0;
 }
 
 function cmdSample(flags) {
@@ -1502,7 +1542,7 @@ function cmdSample(flags) {
   return 0;
 }
 
-function main() {
+async function main() {
   const argv = process.argv.slice(2);
   const cmd = argv[0];
   const { flags, rest } = parseArgs(argv.slice(1));
@@ -1529,14 +1569,14 @@ function main() {
   if (cmd === 'preview') return cmdPreview(rest[0], flags);
   if (cmd === 'index') return cmdIndex(rest[0], flags);
   if (cmd === 'sample') return cmdSample(flags);
-  fail('未知命令：' + cmd + '（可用：render / mermaid / check / sample / help）');
+  fail('未知命令：' + cmd + '（可用：render / mermaid / check / index / preview / sample / help）');
 }
 
 const HELP = `flow.mjs — 业务流程 → 两版交互式流程图（竖版适配手机 / 横版适配电脑）+ Mermaid 源码
 零依赖、纯离线，不请求任何 CDN。
 
 用法：
-  node flow.mjs render  <spec.json|spec.mmd> [--out x.html] [--all] [--wrap N] [--debug]
+  node flow.mjs render  <spec.json|spec.mmd> [--out x.html] [--all] [--svg x.svg] [--mmd x.mmd] [--wrap N] [--debug]
   node flow.mjs mermaid <spec.json> [--out x.mmd]
   node flow.mjs check   <spec.json|spec.mmd>
   node flow.mjs preview <流程图.html> [--out 对照预览.html]   # 一页并排看手机/电脑两版
@@ -1561,4 +1601,11 @@ const HELP = `flow.mjs — 业务流程 → 两版交互式流程图（竖版适
   --debug        打印两版的栏数/行数与各栏成员
 `;
 
-main();
+// 退出码契约：0=成功（check 通过）/ 1=check 发现结构问题 / 2=参数或输入错误
+// 注意：main() 是 async（render / index 会 await），裸调用会把返回值与 rejection 都吞掉
+main()
+  .then((code) => { if (typeof code === 'number') process.exitCode = code; })
+  .catch((err) => {
+    process.stderr.write('flow: ' + ((err && err.message) || err) + '\n');
+    process.exitCode = 2;
+  });
