@@ -204,6 +204,10 @@
     #search-count{order:4;min-width:0}
     .legend{order:5;width:100%;margin-left:0}
     .legend button{padding:4px 8px;font-size:11.5px}
+    /* A4：窄屏上把可点面积做大（手指比鼠标粗；WCAG 2.2 AA 最低 24×24，这里给 34–40） */
+    .icon-btn,a.icon-btn{min-height:40px;min-width:40px;padding:8px 10px;justify-content:center}
+    .seg button{min-height:38px;min-width:40px}
+    .legend button{min-height:34px;padding:7px 10px}
     /* 手机上概览/详情收成**覆盖式**底部抽屉：脱离 flex 流，画布尺寸不变，
        就不会出现"开面板→画布变矮→重新适配→图被裁掉"的连锁反应 */
     aside{display:none;position:fixed;left:0;right:0;bottom:0;top:auto;width:auto;flex:0 0 auto;
@@ -723,7 +727,7 @@
   <button id="theme" class="icon-btn" title="明/暗"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.6a5.4 5.4 0 100 10.8A5.4 5.4 0 008 2.6z"/><path d="M8 2.6v10.8"/></svg><span>明/暗</span></button>
   <button id="lock" class="icon-btn lock-btn" title="锁定颜色"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3.4" y="7.2" width="9.2" height="6.6" rx="1.4"/><path d="M5.6 7.2V5.4a2.4 2.4 0 014.8 0v1.8"/></svg><span>锁定颜色</span></button>
   <button id="mmd-toggle" class="icon-btn" title="Mermaid"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6.2 4.4L3 8l3.2 3.6M9.8 4.4L13 8l-3.2 3.6"/></svg><span>Mermaid</span></button>
-  <span class="foot-hint"><span class="only-pc">按屏幕自动选竖/横版 · 滚轮缩放 · 拖拽平移 · 双击空白适配 · Esc 取消选中</span><span class="only-touch">按屏幕自动选竖/横版 · 单指拖动 · 双指缩放 · 点环节看详情</span></span>
+  <span class="foot-hint"><span class="only-pc">按屏幕自动选竖/横版 · 滚轮缩放 · 拖拽平移 · 双击空白适配 · Esc 取消选中 · 生成器 v1.2.0</span><span class="only-touch">按屏幕自动选竖/横版 · 单指拖动 · 双指缩放 · 点环节看详情 · 生成器 v1.2.0</span></span>
 </footer>
 <div id="mmd-panel">
   <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
@@ -772,7 +776,7 @@
   <p class="fd-hint">这里是同一目录下由本 skill 生成的所有流程图（按修改时间倒序）。用 HTTP 打开时会实时刷新；直接双击本地文件时用的是生成当时的清单。</p>
 </div>
 <div id="toast"></div>
-<script id="flow-data" type="application/json">{"slug":"示例：饮品店_·_每日开店到闭店","title":"示例：饮品店 · 每日开店到闭店","subtitle":"虚构示例，用来演示分组 / 时间窗 / 状态 / 判断 / 风险点；把它改成你自己的流程即可","direction":"TD","groups":[{"id":"g1","label":"开店（08:00–09:30）","members":["s","a","b","c"]},{"id":"g2","label":"营业（09:30–21:00）","members":["d","e","f","g","h"]},{"id":"g3","label":"收尾（21:00–22:30）","members":["i","j","k","l"]}],"statusLabels":{"done":"已完成","doing":"进行中","todo":"待开始","risk":"需人工把关","hold":"阻塞/等素材"},"kinds":[{"key":"start","label":"起点"},{"key":"task","label":"环节"},{"key":"milestone","label":"关键检查点"},{"key":"decision","label":"判断"},{"key":"risk","label":"风险点"},{"key":"end","label":"终点"}],"nodes":[{"id":"s","label":"08:00 到店","kind":"start","kindLabel":"起点","status":"done","statusLabel":"已完成","time":"","owner":"","detail":"","note":"","preds":[],"succs":["a"]},{"id":"a","label":"开设备与巡检","kind":"task","kindLabel":"环节","status":"done","statusLabel":"已完成","time":"08:00–08:30","owner":"店长","detail":"咖啡机 / 制冰机 / 收银台 / 灭火器压力表","note":"","preds":["s"],"succs":["b"]},{"id":"b","label":"备料与试味","kind":"task","kindLabel":"环节","status":"done","statusLabel":"已完成","time":"08:30–09:10","owner":"后厨","detail":"研磨刻度、糖浆效期、试饮校准","note":"","preds":["a"],"succs":["c"]},{"id":"c","label":"开店前复检","kind":"milestone","kindLabel":"关键检查点","status":"doing","statusLabel":"进行中","time":"09:10–09:30","owner":"店长","detail":"卫生 / 价签 / 外卖平台接单状态","note":"复检不过先不开门，避免差评","preds":["b"],"succs":["d"]},{"id":"d","label":"09:30 开门营业","kind":"task","kindLabel":"环节","status":"doing","statusLabel":"进行中","time":"09:30–11:00","owner":"值班","detail":"","note":"","preds":["c"],"succs":["e"]},{"id":"e","label":"排队是否超过 8 单","kind":"decision","kindLabel":"判断","status":"todo","statusLabel":"待开始","time":"11:00–13:00","owner":"值班","detail":"判断要不要加开出杯位","note":"","preds":["d"],"succs":["f","g"]},{"id":"f","label":"开第二个出杯位","kind":"risk","kindLabel":"风险点","status":"risk","statusLabel":"需人工把关","time":"高峰","owner":"值班","detail":"临时加人，注意冰槽与杯盖库存","note":"库存不够时先限购单品","preds":["e"],"succs":["h"]},{"id":"g","label":"正常出杯","kind":"task","kindLabel":"环节","status":"todo","statusLabel":"待开始","time":"高峰","owner":"值班","detail":"","note":"","preds":["e"],"succs":["h"]},{"id":"h","label":"午后补货","kind":"task","kindLabel":"环节","status":"hold","statusLabel":"阻塞/等素材","time":"14:00–15:00","owner":"后厨","detail":"牛奶 / 冰块 / 杯具 / 封口膜","note":"等供应商到货，缺的先用替代品","preds":["f","g"],"succs":["i"]},{"id":"i","label":"21:00 停止接单","kind":"task","kindLabel":"环节","status":"todo","statusLabel":"待开始","time":"21:00","owner":"值班","detail":"","note":"","preds":["h"],"succs":["j"]},{"id":"j","label":"清洁与设备保养","kind":"task","kindLabel":"环节","status":"todo","statusLabel":"待开始","time":"21:00–22:00","owner":"后厨","detail":"磨豆机清粉、奶管冲洗、地面消毒","note":"","preds":["i"],"succs":["k"]},{"id":"k","label":"盘点与对账","kind":"task","kindLabel":"环节","status":"todo","statusLabel":"待开始","time":"22:00–22:20","owner":"店长","detail":"现金 / 平台流水 / 库存差异","note":"","preds":["j"],"succs":["l"]},{"id":"l","label":"22:30 闭店上报","kind":"end","kindLabel":"终点","status":"todo","statusLabel":"待开始","time":"","owner":"","detail":"日报发到门店群，异常单独标注","note":"","preds":["k"],"succs":[]}],"edges":[{"from":"s","to":"a","label":"","style":"solid"},{"from":"a","to":"b","label":"","style":"solid"},{"from":"b","to":"c","label":"","style":"solid"},{"from":"c","to":"d","label":"通过","style":"solid"},{"from":"d","to":"e","label":"","style":"solid"},{"from":"e","to":"f","label":"超过 8 单","style":"solid"},{"from":"e","to":"g","label":"未超过","style":"solid"},{"from":"f","to":"h","label":"","style":"solid"},{"from":"g","to":"h","label":"","style":"solid"},{"from":"h","to":"i","label":"","style":"solid"},{"from":"i","to":"j","label":"","style":"solid"},{"from":"j","to":"k","label":"","style":"solid"},{"from":"k","to":"l","label":"","style":"solid"}],"selfFile":"demo.html","flows":[{"file":"demo.html","title":"示例：饮品店 · 每日开店到闭店","nodes":13,"edges":13,"groups":3,"portrait":"577x2296","landscape":"1134x824","mtime":"本次生成","mtimeMs":0}]}</script>
+<script id="flow-data" type="application/json">{"slug":"示例：饮品店_·_每日开店到闭店","title":"示例：饮品店 · 每日开店到闭店","subtitle":"虚构示例，用来演示分组 / 时间窗 / 状态 / 判断 / 风险点；把它改成你自己的流程即可","direction":"TD","groups":[{"id":"g1","label":"开店（08:00–09:30）","members":["s","a","b","c"]},{"id":"g2","label":"营业（09:30–21:00）","members":["d","e","f","g","h"]},{"id":"g3","label":"收尾（21:00–22:30）","members":["i","j","k","l"]}],"statusLabels":{"done":"已完成","doing":"进行中","todo":"待开始","risk":"需人工把关","hold":"阻塞/等素材"},"kinds":[{"key":"start","label":"起点"},{"key":"task","label":"环节"},{"key":"milestone","label":"关键检查点"},{"key":"decision","label":"判断"},{"key":"risk","label":"风险点"},{"key":"end","label":"终点"}],"nodes":[{"id":"s","label":"08:00 到店","kind":"start","kindLabel":"起点","status":"done","statusLabel":"已完成","time":"","owner":"","detail":"","note":"","preds":[],"succs":["a"]},{"id":"a","label":"开设备与巡检","kind":"task","kindLabel":"环节","status":"done","statusLabel":"已完成","time":"08:00–08:30","owner":"店长","detail":"咖啡机 / 制冰机 / 收银台 / 灭火器压力表","note":"","preds":["s"],"succs":["b"]},{"id":"b","label":"备料与试味","kind":"task","kindLabel":"环节","status":"done","statusLabel":"已完成","time":"08:30–09:10","owner":"后厨","detail":"研磨刻度、糖浆效期、试饮校准","note":"","preds":["a"],"succs":["c"]},{"id":"c","label":"开店前复检","kind":"milestone","kindLabel":"关键检查点","status":"doing","statusLabel":"进行中","time":"09:10–09:30","owner":"店长","detail":"卫生 / 价签 / 外卖平台接单状态","note":"复检不过先不开门，避免差评","preds":["b"],"succs":["d"]},{"id":"d","label":"09:30 开门营业","kind":"task","kindLabel":"环节","status":"doing","statusLabel":"进行中","time":"09:30–11:00","owner":"值班","detail":"","note":"","preds":["c"],"succs":["e"]},{"id":"e","label":"排队是否超过 8 单","kind":"decision","kindLabel":"判断","status":"todo","statusLabel":"待开始","time":"11:00–13:00","owner":"值班","detail":"判断要不要加开出杯位","note":"","preds":["d"],"succs":["f","g"]},{"id":"f","label":"开第二个出杯位","kind":"risk","kindLabel":"风险点","status":"risk","statusLabel":"需人工把关","time":"高峰","owner":"值班","detail":"临时加人，注意冰槽与杯盖库存","note":"库存不够时先限购单品","preds":["e"],"succs":["h"]},{"id":"g","label":"正常出杯","kind":"task","kindLabel":"环节","status":"todo","statusLabel":"待开始","time":"高峰","owner":"值班","detail":"","note":"","preds":["e"],"succs":["h"]},{"id":"h","label":"午后补货","kind":"task","kindLabel":"环节","status":"hold","statusLabel":"阻塞/等素材","time":"14:00–15:00","owner":"后厨","detail":"牛奶 / 冰块 / 杯具 / 封口膜","note":"等供应商到货，缺的先用替代品","preds":["f","g"],"succs":["i"]},{"id":"i","label":"21:00 停止接单","kind":"task","kindLabel":"环节","status":"todo","statusLabel":"待开始","time":"21:00","owner":"值班","detail":"","note":"","preds":["h"],"succs":["j"]},{"id":"j","label":"清洁与设备保养","kind":"task","kindLabel":"环节","status":"todo","statusLabel":"待开始","time":"21:00–22:00","owner":"后厨","detail":"磨豆机清粉、奶管冲洗、地面消毒","note":"","preds":["i"],"succs":["k"]},{"id":"k","label":"盘点与对账","kind":"task","kindLabel":"环节","status":"todo","statusLabel":"待开始","time":"22:00–22:20","owner":"店长","detail":"现金 / 平台流水 / 库存差异","note":"","preds":["j"],"succs":["l"]},{"id":"l","label":"22:30 闭店上报","kind":"end","kindLabel":"终点","status":"todo","statusLabel":"待开始","time":"","owner":"","detail":"日报发到门店群，异常单独标注","note":"","preds":["k"],"succs":[]}],"edges":[{"from":"s","to":"a","label":"","style":"solid"},{"from":"a","to":"b","label":"","style":"solid"},{"from":"b","to":"c","label":"","style":"solid"},{"from":"c","to":"d","label":"通过","style":"solid"},{"from":"d","to":"e","label":"","style":"solid"},{"from":"e","to":"f","label":"超过 8 单","style":"solid"},{"from":"e","to":"g","label":"未超过","style":"solid"},{"from":"f","to":"h","label":"","style":"solid"},{"from":"g","to":"h","label":"","style":"solid"},{"from":"h","to":"i","label":"","style":"solid"},{"from":"i","to":"j","label":"","style":"solid"},{"from":"j","to":"k","label":"","style":"solid"},{"from":"k","to":"l","label":"","style":"solid"}],"selfFile":"demo.html","flows":[{"file":"demo.html","title":"示例：饮品店 · 每日开店到闭店","nodes":13,"edges":13,"groups":3,"portrait":"577x2296","landscape":"1134x824","status":"done:3,doing:2,todo:6,risk:1,hold:1","mtime":"2026/10/12 20:27:57","mtimeMs":1791808077098.839}]}</script>
 <script>
 (function(){
   'use strict';
@@ -800,7 +804,14 @@
   }
   function paintActive(){ var v=cur(); paint(v); zoomLabel.textContent=Math.round(v.view.K/(v.map.s||1)*100)+'%'; }
   function variantKey(v){ return (V.portrait===v)?'portrait':'landscape'; }
-  function rememberZoom(v){ lsSet('flowviz-zoom:'+SELF+':'+variantKey(v), {k:v.view.K, ts:Date.now()}); }
+  // A1：捏合/滚轮每一帧都会调到这里；直接写 localStorage 在手机上很卡，改成 300ms 防抖 + 关页面前补写一次
+  var zoomSaveTimer=null;
+  function rememberZoom(v){
+    var key='flowviz-zoom:'+SELF+':'+variantKey(v), k=v.view.K;
+    if(zoomSaveTimer) clearTimeout(zoomSaveTimer);
+    zoomSaveTimer=setTimeout(function(){ zoomSaveTimer=null; lsSet(key, {k:k, ts:Date.now()}); }, 300);
+  }
+  window.addEventListener('pagehide',function(){ if(zoomSaveTimer){ clearTimeout(zoomSaveTimer); zoomSaveTimer=null; } });
   function fitAll(v){ v=v||cur(); if(!measure(v)) return; v.view.K=v.map.s; v.view.TX=v.map.cx; v.view.TY=v.map.cy; paintActive(); rememberZoom(v); }
   function initial(v){
     v=v||cur(); if(!measure(v)) return;
@@ -841,12 +852,16 @@
   function touchDist(e){ var a=e.touches[0], b=e.touches[1]; return Math.sqrt((a.clientX-b.clientX)*(a.clientX-b.clientX)+(a.clientY-b.clientY)*(a.clientY-b.clientY)); }
   VN.forEach(function(n){
     var v=V[n]; if(!v) return;
-    var pinch=null;
+    var pinch=null, lastTouch=0;
     v.svg.addEventListener('wheel',function(e){ e.preventDefault(); var r=v.svg.getBoundingClientRect(); zoomAt(v, e.clientX-r.left, e.clientY-r.top, e.deltaY<0?1.12:1/1.12); },{passive:false});
-    v.svg.addEventListener('mousedown',function(e){ drag={n:n,x:e.clientX,y:e.clientY,ox:v.view.TX,oy:v.view.TY,moved:false}; });
+    v.svg.addEventListener('mousedown',function(e){
+      if(Date.now()-lastTouch<700) return;          // 触屏刚结束：这是浏览器补发的合成事件
+      drag={n:n,x:e.clientX,y:e.clientY,ox:v.view.TX,oy:v.view.TY,moved:false};
+    });
     v.svg.addEventListener('dblclick',function(e){ if(!(e.target.closest&&e.target.closest('.node'))) fitAll(v); });
     // 触屏：单指平移 / 双指缩放 / 轻点选中（手机上没有鼠标事件，必须单独处理）
     v.svg.addEventListener('touchstart',function(e){
+      lastTouch=Date.now();
       if(e.touches.length===1){ pinch=null; drag={n:n,x:e.touches[0].clientX,y:e.touches[0].clientY,ox:v.view.TX,oy:v.view.TY,moved:false}; }
       else if(e.touches.length===2){ drag=null; pinch={d:touchDist(e)}; }
     },{passive:true});
@@ -865,16 +880,26 @@
       }
     },{passive:false});
     v.svg.addEventListener('touchend',function(e){
-      if(drag&&drag.n===n&&!drag.moved&&e.changedTouches.length){
+      lastTouch=Date.now();
+      var wasPinch=!!pinch;
+      if(drag&&drag.n===n&&!drag.moved&&!wasPinch&&e.changedTouches.length){
         var t=e.changedTouches[0], el=document.elementFromPoint(t.clientX,t.clientY);
         var g=el&&el.closest?el.closest('.node'):null;
         if(g) select(g.getAttribute('data-id')); else select(null);
       }
       if(!e.touches.length){ drag=null; pinch=null; }
+      else if(e.touches.length===1){
+        // A2：双指缩放时松开一根手指 —— 把拖动重新锚定到剩下的那根，
+        // 否则要么拖不动、要么用旧坐标算位移导致画面"跳"一下
+        pinch=null;
+        drag={n:n,x:e.touches[0].clientX,y:e.touches[0].clientY,ox:v.view.TX,oy:v.view.TY,moved:true};
+      }
     });
   });
+  // A3：触屏抬手后浏览器会补发一套 mousedown/mouseup，若不忽略，"轻点"会跑两遍（还会顺带起一次拖动）
   window.addEventListener('mousemove',function(e){ if(!drag) return; var v=V[drag.n]; var dx=e.clientX-drag.x, dy=e.clientY-drag.y; if(Math.abs(dx)+Math.abs(dy)>3) drag.moved=true; v.view.TX=drag.ox+dx; v.view.TY=drag.oy+dy; paintActive(); });
   window.addEventListener('mouseup',function(e){
+    if(Date.now()-lastTouch<700) return;            // 同上：合成鼠标事件不再重复处理
     if(drag&&!drag.moved&&drag.n===active){ var g=e.target.closest?e.target.closest('.node'):null; if(g) select(g.getAttribute('data-id')); else if(e.target.closest&&e.target.closest('svg')) select(null); }
     drag=null;
   });

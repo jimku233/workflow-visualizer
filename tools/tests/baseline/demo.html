@@ -204,6 +204,10 @@
     #search-count{order:4;min-width:0}
     .legend{order:5;width:100%;margin-left:0}
     .legend button{padding:4px 8px;font-size:11.5px}
+    /* A4：窄屏上把可点面积做大（手指比鼠标粗；WCAG 2.2 AA 最低 24×24，这里给 34–40） */
+    .icon-btn,a.icon-btn{min-height:40px;min-width:40px;padding:8px 10px;justify-content:center}
+    .seg button{min-height:38px;min-width:40px}
+    .legend button{min-height:34px;padding:7px 10px}
     /* 手机上概览/详情收成**覆盖式**底部抽屉：脱离 flex 流，画布尺寸不变，
        就不会出现"开面板→画布变矮→重新适配→图被裁掉"的连锁反应 */
     aside{display:none;position:fixed;left:0;right:0;bottom:0;top:auto;width:auto;flex:0 0 auto;
@@ -800,7 +804,14 @@
   }
   function paintActive(){ var v=cur(); paint(v); zoomLabel.textContent=Math.round(v.view.K/(v.map.s||1)*100)+'%'; }
   function variantKey(v){ return (V.portrait===v)?'portrait':'landscape'; }
-  function rememberZoom(v){ lsSet('flowviz-zoom:'+SELF+':'+variantKey(v), {k:v.view.K, ts:Date.now()}); }
+  // A1：捏合/滚轮每一帧都会调到这里；直接写 localStorage 在手机上很卡，改成 300ms 防抖 + 关页面前补写一次
+  var zoomSaveTimer=null;
+  function rememberZoom(v){
+    var key='flowviz-zoom:'+SELF+':'+variantKey(v), k=v.view.K;
+    if(zoomSaveTimer) clearTimeout(zoomSaveTimer);
+    zoomSaveTimer=setTimeout(function(){ zoomSaveTimer=null; lsSet(key, {k:k, ts:Date.now()}); }, 300);
+  }
+  window.addEventListener('pagehide',function(){ if(zoomSaveTimer){ clearTimeout(zoomSaveTimer); zoomSaveTimer=null; } });
   function fitAll(v){ v=v||cur(); if(!measure(v)) return; v.view.K=v.map.s; v.view.TX=v.map.cx; v.view.TY=v.map.cy; paintActive(); rememberZoom(v); }
   function initial(v){
     v=v||cur(); if(!measure(v)) return;
@@ -841,12 +852,16 @@
   function touchDist(e){ var a=e.touches[0], b=e.touches[1]; return Math.sqrt((a.clientX-b.clientX)*(a.clientX-b.clientX)+(a.clientY-b.clientY)*(a.clientY-b.clientY)); }
   VN.forEach(function(n){
     var v=V[n]; if(!v) return;
-    var pinch=null;
+    var pinch=null, lastTouch=0;
     v.svg.addEventListener('wheel',function(e){ e.preventDefault(); var r=v.svg.getBoundingClientRect(); zoomAt(v, e.clientX-r.left, e.clientY-r.top, e.deltaY<0?1.12:1/1.12); },{passive:false});
-    v.svg.addEventListener('mousedown',function(e){ drag={n:n,x:e.clientX,y:e.clientY,ox:v.view.TX,oy:v.view.TY,moved:false}; });
+    v.svg.addEventListener('mousedown',function(e){
+      if(Date.now()-lastTouch<700) return;          // 触屏刚结束：这是浏览器补发的合成事件
+      drag={n:n,x:e.clientX,y:e.clientY,ox:v.view.TX,oy:v.view.TY,moved:false};
+    });
     v.svg.addEventListener('dblclick',function(e){ if(!(e.target.closest&&e.target.closest('.node'))) fitAll(v); });
     // 触屏：单指平移 / 双指缩放 / 轻点选中（手机上没有鼠标事件，必须单独处理）
     v.svg.addEventListener('touchstart',function(e){
+      lastTouch=Date.now();
       if(e.touches.length===1){ pinch=null; drag={n:n,x:e.touches[0].clientX,y:e.touches[0].clientY,ox:v.view.TX,oy:v.view.TY,moved:false}; }
       else if(e.touches.length===2){ drag=null; pinch={d:touchDist(e)}; }
     },{passive:true});
@@ -865,16 +880,26 @@
       }
     },{passive:false});
     v.svg.addEventListener('touchend',function(e){
-      if(drag&&drag.n===n&&!drag.moved&&e.changedTouches.length){
+      lastTouch=Date.now();
+      var wasPinch=!!pinch;
+      if(drag&&drag.n===n&&!drag.moved&&!wasPinch&&e.changedTouches.length){
         var t=e.changedTouches[0], el=document.elementFromPoint(t.clientX,t.clientY);
         var g=el&&el.closest?el.closest('.node'):null;
         if(g) select(g.getAttribute('data-id')); else select(null);
       }
       if(!e.touches.length){ drag=null; pinch=null; }
+      else if(e.touches.length===1){
+        // A2：双指缩放时松开一根手指 —— 把拖动重新锚定到剩下的那根，
+        // 否则要么拖不动、要么用旧坐标算位移导致画面"跳"一下
+        pinch=null;
+        drag={n:n,x:e.touches[0].clientX,y:e.touches[0].clientY,ox:v.view.TX,oy:v.view.TY,moved:true};
+      }
     });
   });
+  // A3：触屏抬手后浏览器会补发一套 mousedown/mouseup，若不忽略，"轻点"会跑两遍（还会顺带起一次拖动）
   window.addEventListener('mousemove',function(e){ if(!drag) return; var v=V[drag.n]; var dx=e.clientX-drag.x, dy=e.clientY-drag.y; if(Math.abs(dx)+Math.abs(dy)>3) drag.moved=true; v.view.TX=drag.ox+dx; v.view.TY=drag.oy+dy; paintActive(); });
   window.addEventListener('mouseup',function(e){
+    if(Date.now()-lastTouch<700) return;            // 同上：合成鼠标事件不再重复处理
     if(drag&&!drag.moved&&drag.n===active){ var g=e.target.closest?e.target.closest('.node'):null; if(g) select(g.getAttribute('data-id')); else if(e.target.closest&&e.target.closest('svg')) select(null); }
     drag=null;
   });

@@ -173,6 +173,10 @@
     #search-count{order:4;min-width:0}
     .legend{order:5;width:100%;margin-left:0}
     .legend button{padding:4px 8px;font-size:11.5px}
+    /* A4：窄屏上把可点面积做大（手指比鼠标粗；WCAG 2.2 AA 最低 24×24，这里给 34–40） */
+    .icon-btn,a.icon-btn{min-height:40px;min-width:40px;padding:8px 10px;justify-content:center}
+    .seg button{min-height:38px;min-width:40px}
+    .legend button{min-height:34px;padding:7px 10px}
     /* 手机上概览/详情收成**覆盖式**底部抽屉：脱离 flex 流，画布尺寸不变，
        就不会出现"开面板→画布变矮→重新适配→图被裁掉"的连锁反应 */
     aside{display:none;position:fixed;left:0;right:0;bottom:0;top:auto;width:auto;flex:0 0 auto;
