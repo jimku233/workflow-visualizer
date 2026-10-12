@@ -105,22 +105,27 @@ node serve.mjs <目录> [端口]           # 默认 8765
 前端不再以字符串模板内联在 `flow.mjs` 里，而是**真实文件 + 渲染时内联**：
 
 ```
-assets/app.js      页面交互 JS（视图/缩放、选中、搜索命中导航、主题、导出、手机抽屉、触屏手势）
+assets/app.js      流程图页面的交互 JS（视图/缩放、选中、搜索命中导航、主题、导出、手机抽屉、触屏手势）
 assets/app.css     流程图页面的整页 CSS（含移动端断点 <960px / <600px）
 assets/svg.css     SVG 内的主题变量与"缩小简化"规则，含 {{vid}} 占位（每版式一份 SVG，id 要带后缀）
+assets/shell.html  流程图页面的 HTML 骨架，含 {{titleTag}}/{{stats}}/{{legend}}/{{svgPortrait}}/{{svgLandscape}}/{{mmd}}/{{json}}/{{css}}/{{js}} 等 11 个占位符
+assets/home.js     首页交互 JS（筛选/排序/最近打开/重复卡片/外观设置）
+assets/home.css    首页整页 CSS
 ```
 
-`scripts/flow.mjs` 里的加载契约（约 10 行）：
+`scripts/flow.mjs` / `scripts/serve.mjs` 里的加载契约：
 
 ```js
+// flow.mjs
 const ASSET_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets');
-const assetCache = new Map();
-const loadAsset = (name) => { if (!assetCache.has(name)) assetCache.set(name, readFileSync(join(ASSET_DIR, name), 'utf8')); return assetCache.get(name); };
-
+const loadAsset = (name) => { /* 读一次并缓存 */ };
 const CLIENT_JS = loadAsset('app.js');                     // 原样内联成 <script>
-function svgStyle(vid) { return loadAsset('svg.css').replace(/\{\{vid\}\}/g, vid); }   // {{vid}} → portrait / landscape
-// renderHtml 里：<style>${loadAsset('app.css')}</style>
+function svgStyle(vid) { return loadAsset('svg.css').replace(/\{\{vid\}\}/g, vid); }
+const SHELL = loadAsset('shell.html');                     // renderHtml() 里做占位符替换
+// serve.mjs：同样用 loadAsset('home.css' / 'home.js')
 ```
+
+`tools/split-home.mjs`、`tools/split-shell.mjs` 是一次性迁移脚本（自带"拆分前后逐字节相同"的验证，跑一遍就能复现这个结构）。
 
 **硬要求**
 
@@ -129,7 +134,7 @@ function svgStyle(vid) { return loadAsset('svg.css').replace(/\{\{vid\}\}/g, vid
 3. `svg.css` 里凡是带 `-${vid}` 的 id（filters / markers / patterns / `#vp`）一律写 `{{vid}}`，不要写死 `portrait`；
 4. 仍**不允许**引入构建步骤、npm 依赖或运行时网络请求 —— 内联在渲染时由 Node 完成，一次性。
 
-**还没拆的两块**（下一步可做）：`serve.mjs` 首页的 CSS/JS（`buildHome()` 的 `<style>` 与 `homeScript()`，约 25 KB）、`flow.mjs` 里 `renderHtml()` 的 HTML 外壳骨架（动态插值约 30 处）。
+**已完成**：首页 CSS/JS 与 HTML 骨架也拆出来了（`assets/home.css`、`assets/home.js`、`assets/shell.html`）——前端 100% 是独立文件，`scripts/*.mjs` 里只剩加载与替换。
 
 ## 8. 改动后的回归清单
 
