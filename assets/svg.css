@@ -1,0 +1,74 @@
+
+    svg{--edge:#94a0b3;--edge-soft:#55627a;--edge-dim:#39424f;--grid:#2b3646;--card:#1c2431;
+      --hit:#4a9dff;
+      --t-label:#f3f6fb;--t-meta:#a3aec2;--t-title:#f7fafd;--t-sub:#a3aec2;
+      --n-task:#212a38;--n-task-s:#46536a;--n-dec:#2f2716;--n-dec-s:#c3a044;
+      --n-se:#173226;--n-se-s:#4aa06f;--n-risk:#311a1d;--n-risk-s:#b85c60;--n-mile:#1f2839;--n-mile-s:#7c90b8;
+      --dot-done:#46c886;--dot-doing:#5aa9ff;--dot-todo:#7b8698;--dot-risk:#f4676c;--dot-hold:#eab24a;--accent:#5aa9ff}
+    svg[data-theme='light']{--edge:#7d6c52;--edge-soft:#a8946f;--edge-dim:#b8a37c;--grid:#c6b28e;--card:#fffdf7;
+      --hit:#2b7fe0;
+      --t-label:#2b2721;--t-meta:#6f6553;--t-title:#221f1a;--t-sub:#6f6553;
+      --n-task:#fffdf7;--n-task-s:#8a7448;--n-dec:#fdf3da;--n-dec-s:#a8761a;
+      --n-se:#eef7ea;--n-se-s:#3f8556;--n-risk:#fbeae8;--n-risk-s:#b04e4e;--n-mile:#f6f0e3;--n-mile-s:#8f8168;
+      --dot-done:#35935f;--dot-doing:#2b7fe0;--dot-todo:#948a78;--dot-risk:#c9424a;--dot-hold:#bd7f16;--accent:#bf6b3a}
+    /* 浅色主题在"缩小到看不清"时自动再加深一档线条（笔迹 3.29→4.22、连线 3.71→4.28，只加一档、不跳到深色） */
+    svg[data-theme='light'].zoomed-out{--edge:#6f6049;--edge-soft:#8a7550;--edge-dim:#a08a63;
+      --n-task-s:#75603c;--n-dec-s:#96691a;--n-se-s:#357a4c;--n-risk-s:#a84848;--n-mile-s:#7f7156}
+    .canvas-grid{opacity:.9}
+    .grid-dot{fill:var(--grid)}
+    .t-accent{fill:var(--accent)}
+    .t-title{font:600 21px/1.25 var(--ff);fill:var(--t-title)}
+    .t-sub{font:400 12.5px/1.4 var(--ff);fill:var(--t-sub)}
+    .node{cursor:pointer}
+    .node .node-bg{stroke-width:1.5}
+    .node:hover .node-bg{stroke-width:2.3}
+    .node.k-task .node-bg,.node.k-milestone .node-bg{fill:var(--n-task);stroke:var(--n-task-s)}
+    .node.k-decision .node-bg{fill:var(--n-dec);stroke:var(--n-dec-s)}
+    .node.k-start .node-bg,.node.k-end .node-bg{fill:var(--n-se);stroke:var(--n-se-s)}
+    .node.k-risk .node-bg{fill:var(--n-risk);stroke:var(--n-risk-s);stroke-dasharray:6 4}
+    .node.k-milestone .node-bg{stroke-width:2}
+    .node .t-label{font:500 15px/1.35 var(--ff);fill:var(--t-label)}
+    .node .t-meta{font:400 11.5px/1.2 var(--ff);fill:var(--t-meta)}
+    .node .t-time{font:500 11px/1.2 var(--ff);fill:var(--t-meta)}
+    .node .time-pill{fill:var(--card);stroke:var(--edge-soft);stroke-width:1;opacity:.85}
+    .node .kind-glyph{font:600 10.5px/1 var(--ff);text-anchor:middle;dominant-baseline:central}
+    .node .kind-chip{stroke:none;opacity:.16}
+    .node .kind-ring{fill:none;stroke-width:1.2}
+    .node .accent{stroke:none}
+    .st-done .accent,.st-done .kind-chip{fill:var(--dot-done)} .st-done .kind-ring{stroke:var(--dot-done)} .st-done .kind-glyph{fill:var(--dot-done)}
+    .st-doing .accent,.st-doing .kind-chip{fill:var(--dot-doing)} .st-doing .kind-ring{stroke:var(--dot-doing)} .st-doing .kind-glyph{fill:var(--dot-doing)}
+    .st-todo .accent,.st-todo .kind-chip{fill:var(--dot-todo)} .st-todo .kind-ring{stroke:var(--dot-todo)} .st-todo .kind-glyph{fill:var(--dot-todo)}
+    .st-risk .accent,.st-risk .kind-chip{fill:var(--dot-risk)} .st-risk .kind-ring{stroke:var(--dot-risk)} .st-risk .kind-glyph{fill:var(--dot-risk)}
+    .st-hold .accent,.st-hold .kind-chip{fill:var(--dot-hold)} .st-hold .kind-ring{stroke:var(--dot-hold)} .st-hold .kind-glyph{fill:var(--dot-hold)}
+    .st-none .accent,.st-none .kind-chip{fill:var(--edge-soft)} .st-none .kind-ring{stroke:var(--edge-soft)} .st-none .kind-glyph{fill:var(--t-meta)}
+    .edge{fill:none;stroke:var(--edge);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+    .edge.dashed{stroke-dasharray:5 5}
+    .edge-label-bg{fill:var(--card);stroke:var(--edge-soft);stroke-width:1}
+    .edge-label{font:500 11.5px/1.2 var(--ff);fill:var(--t-meta);text-anchor:middle}
+    .band-bg{stroke-width:1.2}
+    .band-pill{stroke:none;opacity:.16}
+    .band-label{font:600 12px/1.2 var(--ff)}
+    .band-count{font:400 11px/1.2 var(--ff)}
+    .node.is-dim,.edge.is-dim,.edge-label-g.is-dim{opacity:.12}
+    /* 缩小到看不清小字时自动"简化"：藏掉药丸/小字/底纹，加粗描边，只留框+标题+线 */
+    svg.zoomed-out .time-pill,svg.zoomed-out .t-time,svg.zoomed-out .t-meta{display:none}
+    svg.zoomed-out .canvas-grid{display:none}
+    svg.zoomed-out .node .node-bg{stroke-width:2.6}
+    svg.zoomed-out .node.k-milestone .node-bg{stroke-width:3}
+    svg.zoomed-out .node.k-risk .node-bg{stroke-width:2.6;stroke-dasharray:7 5}
+    svg.zoomed-out .band-bg{fill-opacity:.05}
+    svg.zoomed-out .edge{stroke-width:2.2}
+    svg.zoomed-out .edge-label-bg{display:none}
+    svg.zoomed-out .edge-label{font-size:13px}
+    .node.is-sel .node-bg{stroke-width:2.4;filter:url(#selGlow-{{vid}})}
+    svg[data-theme='light'] .node.is-sel .node-bg{filter:url(#selGlowWarm-{{vid}})}
+    .node.is-hit .node-bg{stroke:var(--hit);stroke-width:2.4}
+    .node.is-hit-soft .node-bg{stroke:var(--dot-hold);stroke-width:2.2;stroke-dasharray:5 4}
+    .edge.is-hi{stroke:var(--accent);stroke-width:2.4}
+    .edge-label-g.is-hi .edge-label{fill:var(--accent)}
+    svg[data-hide-status~='done'] .node.st-done,
+    svg[data-hide-status~='doing'] .node.st-doing,
+    svg[data-hide-status~='todo'] .node.st-todo,
+    svg[data-hide-status~='risk'] .node.st-risk,
+    svg[data-hide-status~='hold'] .node.st-hold{opacity:.12;filter:grayscale(1)}
+  
