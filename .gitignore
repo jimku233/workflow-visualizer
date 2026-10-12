@@ -32,3 +32,7 @@ npm-debug.log*
 
 # 测试临时产物（基线 tools/tests/baseline/ 要提交，这里不要）
 tools/tests/.tmp/
+
+# 拆分脚本的自动备份（一次性，历史交给 git）
+*.pre-split
+*.pre-shell

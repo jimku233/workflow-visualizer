@@ -1164,6 +1164,21 @@ function renderSvg(L, vid = 'v', head = true) {
 
 const CLIENT_JS = loadAsset('app.js');
 
+/** assets/shell.html 是页面骨架，里面的 {{名字}} 是占位符，由 renderHtml 传进来的内容填上。
+ *  只扫描模板一遍、用函数式替换：填进去的内容（Mermaid 源码、JSON、标题……）里即使有 {{…}} 或 $&，也不会被二次展开或吞字符。
+ *  读取时统一成 LF、去 BOM（这些文本原来写在模板字符串里，换行天然是 LF）。 */
+const loadShell = () => {
+  const t = loadAsset('shell.html');
+  return (t.charCodeAt(0) === 0xFEFF ? t.slice(1) : t).replace(/\r\n/g, '\n');
+};
+const fillShell = (tpl, slots) => {
+  for (const k of Object.keys(slots)) if (!tpl.includes('{{' + k + '}}')) throw new Error('shell.html 缺少占位符 {{' + k + '}}');
+  return tpl.replace(/\{\{(\w+)\}\}/g, (_, k) => {
+    if (!(k in slots)) throw new Error('shell.html 里有未知占位符 {{' + k + '}}');
+    return slots[k];
+  });
+};
+
 function renderHtml(svgs, L, mmd, meta = {}) {
   const spec = L.spec;
   const predsOf = new Map(spec.nodes.map((n) => [n.id, []]));
@@ -1201,112 +1216,19 @@ function renderHtml(svgs, L, mmd, meta = {}) {
   ].join('|');
 
   const legend = statusesPresent.map((s) => `<button data-status="${s}"><i class="dot st-${s}"></i>${STATUS_LABEL[s] || s}</button>`).join('');
-  const ICON = {
-    out: '<path d="M3 8h10"/>',
-    in: '<path d="M3 8h10M8 3v10"/>',
-    fit: '<path d="M3 6.5V3h3.5M13 9.5V13H9.5M10 3h3v3.5M6 13H3V9.5"/>',
-    down: '<path d="M8 2.5v7.5M5.2 7.4L8 10.2l2.8-2.8M2.8 12.6h10.4"/>',
-    theme: '<path d="M8 2.6a5.4 5.4 0 100 10.8A5.4 5.4 0 008 2.6z"/><path d="M8 2.6v10.8"/>',
-    code: '<path d="M6.2 4.4L3 8l3.2 3.6M9.8 4.4L13 8l-3.2 3.6"/>',
-    search: '<circle cx="7.2" cy="7.2" r="4.2"/><path d="M10.4 10.4L13.6 13.6"/>',
-    phone: '<rect x="4.6" y="2.2" width="6.8" height="11.6" rx="1.6"/><path d="M7.4 11.6h1.2"/>',
-    monitor: '<rect x="2.2" y="3" width="11.6" height="8" rx="1.4"/><path d="M6 13.4h4M8 11v2.4"/>',
-    panel: '<rect x="2.4" y="3" width="11.2" height="10" rx="1.4"/><path d="M9.6 3v10"/>',
-    layers: '<path d="M8 2.4l5.6 3-5.6 3-5.6-3z"/><path d="M2.4 8.6l5.6 3 5.6-3M2.4 11.6l5.6 3 5.6-3"/>',
-    home: '<path d="M2.6 7.4L8 2.8l5.4 4.6"/><path d="M4.2 7.2v5.9h7.6V7.2"/><path d="M6.8 13.1V9.6h2.4v3.5"/>',
-    lockOpen: '<rect x="3.4" y="7.2" width="9.2" height="6.6" rx="1.4"/><path d="M5.6 7.2V5.4a2.4 2.4 0 014.8 0v1.8"/>',
-    lockClosed: '<rect x="3.4" y="7.2" width="9.2" height="6.6" rx="1.4"/><path d="M5.6 7.2V5.4a2.4 2.4 0 014.8 0"/><path d="M8 9.6v2"/>',
-  };
-  const iconBtn = (id, label, path, extraClass = '') =>
-    `<button id="${id}" class="icon-btn${extraClass ? ' ' + extraClass : ''}" title="${label}"><svg viewBox="0 0 16 16" aria-hidden="true">${path}</svg><span>${label}</span></button>`;
-
-  return `<!DOCTYPE html>
-<html lang="zh-CN" data-theme="dark" data-flow-viz="1">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="flow-viz" content="1">
-<meta name="flow-title" content="${xml(spec.title || '')}">
-<meta name="flow-stats" content="${xml(stats)}">
-<title>${xml(spec.title || '工作流图')}</title>
-<script>
-/* 主题引导：必须在首帧前跑，否则会闪一下深色。
-   规则（后改的优先，与页面里 JS 完全一致）：
-     flowviz-theme          = {mode:'system|dark|light', ts}   总设置（首页「显示设置」写）
-     flowviz-theme:<文件名>  = {mode:'dark|light', ts}          单张图（页面上的明暗键写）
-     flowviz-lock:<文件名>   = {locked:true, mode:'dark|light'} 锁定后冻结该图颜色
-   有效值：锁定 → 冻结值；否则比较两张表的时间戳，谁新听谁的。*/
-(function(){try{
-  var SELF=decodeURIComponent(location.pathname.split('/').pop());
-  function g(k){ var v=localStorage.getItem(k); if(!v) return null; try{ return JSON.parse(v); }catch(e){ return {mode:v,ts:0}; } }
-  var lock=g('flowviz-lock:'+SELF), mode;
-  if(lock&&lock.locked) mode=lock.mode;
-  else {
-    var gp=g('flowviz-theme')||{mode:'system',ts:0};
-    var sp=g('flowviz-theme:'+SELF);
-    mode=(sp&&sp.ts>(gp.ts||0))?sp.mode:(gp.mode||'system');
-  }
-  var d=(mode==='system')?((window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'):mode;
-  document.documentElement.setAttribute('data-theme', d==='light'?'light':'dark');
-}catch(e){}})();
-</script>
-<style>${loadAsset('app.css')}</style>
-</head>
-<body>
-<header>
-  <div class="brand"><span class="brand-dot"></span><span class="brand-name">${xml(spec.title || '工作流')}</span></div>
-  <label class="search"><svg viewBox="0 0 16 16">${ICON.search}</svg><input id="search" type="search" placeholder="搜索环节 / 负责人 / 说明"></label>
-  <span id="search-count"></span>
-  <a id="home-btn" class="icon-btn" href="./" title="回到首页（流程图清单）"><svg viewBox="0 0 16 16" aria-hidden="true">${ICON.home}</svg><span>首页</span></a>
-  ${iconBtn('flows-toggle', '全部流程图', ICON.layers, 'flows-btn')}
-  <div class="legend">${legend}</div>
-</header>
-<main>
-  <div id="canvas" data-show="portrait">${svgs.portrait}${svgs.landscape}</div>
-  <aside><div id="detail"></div></aside>
-</main>
-<footer>
-  <div class="seg">
-    <button data-variant-btn="portrait" class="on" title="竖版：适合手机，纵向滚动"><svg viewBox="0 0 16 16" aria-hidden="true">${ICON.phone}</svg><span>竖版</span></button>
-    <button data-variant-btn="landscape" title="横版：适合电脑，长流程自动分栏"><svg viewBox="0 0 16 16" aria-hidden="true">${ICON.monitor}</svg><span>横版</span></button>
-  </div>
-  ${iconBtn('panel-toggle', '概览', ICON.panel, 'panel-btn')}
-  <div class="zoom-group">
-    ${iconBtn('zoom-out', '缩小', ICON.out)}
-    <span id="zoom-label">100%</span>
-    ${iconBtn('zoom-in', '放大', ICON.in)}
-  </div>
-  ${iconBtn('zoom-fit', '适配', ICON.fit)}
-  <span class="sep"></span>
-  ${iconBtn('export-svg', 'SVG', ICON.down)}
-  ${iconBtn('export-png', 'PNG', ICON.down)}
-  <span class="sep"></span>
-  ${iconBtn('theme', '明/暗', ICON.theme)}
-  ${iconBtn('lock', '锁定颜色', ICON.lockOpen, 'lock-btn')}
-  ${iconBtn('mmd-toggle', 'Mermaid', ICON.code)}
-  <span class="foot-hint"><span class="only-pc">按屏幕自动选竖/横版 · 滚轮缩放 · 拖拽平移 · 双击空白适配 · Esc 取消选中</span><span class="only-touch">按屏幕自动选竖/横版 · 单指拖动 · 双指缩放 · 点环节看详情</span></span>
-</footer>
-<div id="mmd-panel">
-  <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-    <b style="font-size:12.5px">Mermaid 源码（可直接粘进飞书/语雀/GitHub/Typora）</b>
-    <button id="mmd-copy" style="margin-left:auto">复制</button>
-  </div>
-  <textarea id="mmd-src" spellcheck="false">${xml(mmd)}</textarea>
-</div>
-<div id="drawer-scrim"></div>
-<div id="flows-drawer" aria-hidden="true">
-  <div class="fd-head">本机的流程图<button id="flows-close">✕</button></div>
-  <div id="flows-list"></div>
-  <p class="fd-hint">这里是同一目录下由本 skill 生成的所有流程图（按修改时间倒序）。用 HTTP 打开时会实时刷新；直接双击本地文件时用的是生成当时的清单。</p>
-</div>
-<div id="toast"></div>
-<script id="flow-data" type="application/json">${json}</script>
-<script>
-${CLIENT_JS}
-</script>
-</body>
-</html>
-`;
+  return fillShell(loadShell(), {
+    titleMeta: xml(spec.title || ''),
+    stats: xml(stats),
+    titleTag: xml(spec.title || '工作流图'),
+    brandName: xml(spec.title || '工作流'),
+    legend,
+    svgPortrait: svgs.portrait,
+    svgLandscape: svgs.landscape,
+    mmd: xml(mmd),
+    json,
+    css: loadAsset('app.css'),
+    js: CLIENT_JS,
+  });
 }
 
 // ─────────────────────────────────────────────────────────────
