@@ -141,6 +141,16 @@ node scripts/serve.mjs ./out 8765
 
 每个产物里写了 `<meta name="flow-version" content="x.y.z">`，清单（`流程索引.json`）记录渲染器版本；**首页会把版本对不上的文件标成「旧版渲染」**并提示跑 `refresh`，所以你不会漏掉该更新的图。
 
+### 删了文件，侧栏 / 首页还显示它？
+
+侧栏（右上角「全部流程图」）和静态首页在 **`file://` 下都是"生成当时的清单快照"**，删掉文件不会自动消失：
+
+```bash
+node scripts/flow.mjs index <产物目录>     # 重建清单 + 静态首页
+node scripts/flow.mjs refresh <产物目录>   # 顺便把所有流程图重渲染（抽屉里的快照也一起更新）
+```
+
+以 HTTP 打开（`node scripts/serve.mjs <产物目录> 8765`）则是**实时刷新**的：页面里删除 / 改名后，服务器会自动重建清单与首页。
 ## 输入格式
 
 两种输入，字段与语法手册见 [`references/spec.md`](references/spec.md)：

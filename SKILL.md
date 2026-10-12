@@ -308,6 +308,7 @@ node "scripts\serve.mjs" ".\out" 8765
 - **批量刷新**：`node scripts/flow.mjs refresh <目录>` —— 扫目录里所有规格（`*.json` 含 `nodes`、`*.mmd`/`*.md`）重渲染，并重建「流程索引.json」与静态首页。产物多时用它。
 - **版本与「旧版」提示**：产物写 `<meta name="flow-version" content="x.y.z">`（渲染器常量 `FLOW_VERSION`），清单记 `generatorVersion` 与每项 `version`；首页把版本不符的卡片标成「旧版渲染」并提示跑 `refresh`。**改了渲染或前端行为就 +1**。
 - **产物不会自动更新**：自包含快照、离线无 CDN。要更新必须重渲染（或让 agent 干）。
+- **删除/改名后侧栏仍显示**：`file://` 下页面内嵌的是生成当时的清单快照 → 跑 `flow.mjs index <目录>`（或 `refresh`）重建；HTTP 模式（`serve.mjs`）会实时刷新并在删除/改名后自动重建（`refreshDerived()`）。
 - **纯聊天型 AI（ChatGPT / Claude 网页版）跑不了 Node**：它们"生成"的 HTML 往往是拿 `docs/demo.html` 改数据或手写仿制品。验收三步：Ctrl+F 搜 `flow-viz` / `flow-version` / `flowviz-zoom`；搜是否残留示例的 `饮品店`；看画布文字与连线是否与规格一致。
 - **解析契约**：退出码 `0/1/2`（成功 / check 有结构问题 / 参数或输入错误）；错误格式 `flow: 文件:行:列: 说明`；未知参数直接报错，不静默。
 - **无害指令白名单**：`classDef / class / style / linkStyle / click / direction / accTitle / accDescr` 忽略并提示；其余不支持语法继续报错。

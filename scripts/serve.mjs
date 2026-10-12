@@ -234,6 +234,7 @@ function homeHeader(count, crumb, rootPath) {
     <div class="row"><span class="k">同一 Wi-Fi</span><span>在电脑上跑 <code>node scripts/serve.mjs &lt;产物目录&gt; 8765</code>，手机浏览器打开 <code>http://&lt;电脑的局域网IP&gt;:8765/</code>。手机端：单指拖动、双指缩放、轻点环节看详情。</span></div>
     <p class="st" style="margin-top:14px">更新与文档</p>
     <div class="row"><span class="k">图是快照</span><span>产物是自包含 HTML，<b>不会自动更新</b>：改了流程要重新渲染。首页会把用旧版本渲染的文件标成「旧版渲染」，跑 <code>node scripts/flow.mjs refresh &lt;目录&gt;</code> 一次全刷。</span></div>
+    <div class="row"><span class="k">删了还在？</span><span>侧栏和这个首页在 <code>file://</code> 下都是<b>生成当时的清单快照</b>：删掉文件后跑一次 <code>node scripts/flow.mjs index &lt;目录&gt;</code>（或 <code>refresh</code>）就会更新；用 <code>node scripts/serve.mjs &lt;目录&gt; 8765</code> 以 HTTP 打开则是实时刷新，页面里删/改名后服务器会自动重建清单。</span></div>
     <div class="row"><span class="k">文档在哪</span><span>技能目录里（用编辑器打开）：<code>README.md</code> 给人看 · <code>SKILL.md</code> 给 agent 看 · <code>CHANGELOG.md</code> 改了什么 · <code>docs/interfaces.md</code> 接口契约。</span></div>
   </div>
   <div id="settings">
