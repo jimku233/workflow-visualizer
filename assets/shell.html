@@ -36,7 +36,7 @@
   <label class="search"><svg viewBox="0 0 16 16"><circle cx="7.2" cy="7.2" r="4.2"/><path d="M10.4 10.4L13.6 13.6"/></svg><input id="search" type="search" placeholder="搜索环节 / 负责人 / 说明"></label>
   <span id="search-count"></span>
   <a id="home-btn" class="icon-btn" href="./" title="回到首页（流程图清单）"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.6 7.4L8 2.8l5.4 4.6"/><path d="M4.2 7.2v5.9h7.6V7.2"/><path d="M6.8 13.1V9.6h2.4v3.5"/></svg><span>首页</span></a>
-  <button id="flows-toggle" class="icon-btn flows-btn" title="全部流程图"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.4l5.6 3-5.6 3-5.6-3z"/><path d="M2.4 8.6l5.6 3 5.6-3M2.4 11.6l5.6 3 5.6-3"/></svg><span>全部流程图</span></button>
+  <button id="flows-toggle" class="icon-btn flows-btn" title="全部流程图" aria-controls="flows-drawer" aria-expanded="false"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.4l5.6 3-5.6 3-5.6-3z"/><path d="M2.4 8.6l5.6 3 5.6-3M2.4 11.6l5.6 3 5.6-3"/></svg><span>全部流程图</span></button>
   <div class="legend">{{legend}}</div>
 </header>
 <main>
@@ -72,7 +72,7 @@
   <textarea id="mmd-src" spellcheck="false">{{mmd}}</textarea>
 </div>
 <div id="drawer-scrim"></div>
-<div id="flows-drawer" aria-hidden="true">
+<div id="flows-drawer" role="dialog" aria-modal="true" aria-label="全部流程图" aria-hidden="true">
   <div class="fd-head">本机的流程图<button id="flows-close">✕</button></div>
   <div id="flows-list"></div>
   <p class="fd-hint">这里是同一目录下由本 skill 生成的所有流程图（按修改时间倒序）。用 HTTP 打开时会实时刷新；直接双击本地文件时用的是生成当时的清单。</p>

@@ -176,6 +176,11 @@
   #mmd-panel{display:none;border-top:1px solid var(--line);background:var(--panel);padding:12px 14px}
   #mmd-panel.open{display:block}
   #mmd-src{width:100%;height:150px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:10px;font:12px/1.65 ui-monospace,Consolas,monospace;padding:10px;resize:vertical;outline:none}
+  /* 键盘焦点环：鼠标点击不显示（:focus-visible），浅色用 accent-text（原 accent 对画布只有 2.86:1） */
+  :focus-visible{outline:2px solid var(--accent-text,var(--accent));outline-offset:2px}
+  .search input:focus-visible{outline:none}
+  .search:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent-text,var(--accent)) 55%,transparent)}
+  #mmd-src:focus-visible{outline:2px solid var(--accent-text,var(--accent))}
   footer{display:flex;gap:8px;padding:8px 14px;border-top:1px solid var(--line);background:var(--panel);font-size:12px;color:var(--muted);align-items:center;flex-wrap:wrap}
   .zoom-group{display:flex;align-items:center;gap:2px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:2px}
   .zoom-group button{border:0;background:none;padding:5px 7px}
@@ -221,7 +226,7 @@
   <label class="search"><svg viewBox="0 0 16 16"><circle cx="7.2" cy="7.2" r="4.2"/><path d="M10.4 10.4L13.6 13.6"/></svg><input id="search" type="search" placeholder="搜索环节 / 负责人 / 说明"></label>
   <span id="search-count"></span>
   <a id="home-btn" class="icon-btn" href="./" title="回到首页（流程图清单）"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.6 7.4L8 2.8l5.4 4.6"/><path d="M4.2 7.2v5.9h7.6V7.2"/><path d="M6.8 13.1V9.6h2.4v3.5"/></svg><span>首页</span></a>
-  <button id="flows-toggle" class="icon-btn flows-btn" title="全部流程图"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.4l5.6 3-5.6 3-5.6-3z"/><path d="M2.4 8.6l5.6 3 5.6-3M2.4 11.6l5.6 3 5.6-3"/></svg><span>全部流程图</span></button>
+  <button id="flows-toggle" class="icon-btn flows-btn" title="全部流程图" aria-controls="flows-drawer" aria-expanded="false"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.4l5.6 3-5.6 3-5.6-3z"/><path d="M2.4 8.6l5.6 3 5.6-3M2.4 11.6l5.6 3 5.6-3"/></svg><span>全部流程图</span></button>
   <div class="legend"><button data-status="done"><i class="dot st-done"></i>已完成</button><button data-status="doing"><i class="dot st-doing"></i>进行中</button><button data-status="todo"><i class="dot st-todo"></i>待开始</button><button data-status="risk"><i class="dot st-risk"></i>需人工把关</button><button data-status="hold"><i class="dot st-hold"></i>阻塞/等素材</button></div>
 </header>
 <main>
@@ -251,6 +256,8 @@
     .node{cursor:pointer}
     .node .node-bg{stroke-width:1.5}
     .node:hover .node-bg{stroke-width:2.3}
+  .node:focus{outline:none}
+  .node:focus-visible .node-bg{stroke:var(--accent);stroke-width:3;stroke-dasharray:none}
     .node.k-task .node-bg,.node.k-milestone .node-bg{fill:var(--n-task);stroke:var(--n-task-s)}
     .node.k-decision .node-bg{fill:var(--n-dec);stroke:var(--n-dec-s)}
     .node.k-start .node-bg,.node.k-end .node-bg{fill:var(--n-se);stroke:var(--n-se-s)}
@@ -476,6 +483,8 @@
     .node{cursor:pointer}
     .node .node-bg{stroke-width:1.5}
     .node:hover .node-bg{stroke-width:2.3}
+  .node:focus{outline:none}
+  .node:focus-visible .node-bg{stroke:var(--accent);stroke-width:3;stroke-dasharray:none}
     .node.k-task .node-bg,.node.k-milestone .node-bg{fill:var(--n-task);stroke:var(--n-task-s)}
     .node.k-decision .node-bg{fill:var(--n-dec);stroke:var(--n-dec-s)}
     .node.k-start .node-bg,.node.k-end .node-bg{fill:var(--n-se);stroke:var(--n-se-s)}
@@ -740,7 +749,7 @@
 </textarea>
 </div>
 <div id="drawer-scrim"></div>
-<div id="flows-drawer" aria-hidden="true">
+<div id="flows-drawer" role="dialog" aria-modal="true" aria-label="全部流程图" aria-hidden="true">
   <div class="fd-head">本机的流程图<button id="flows-close">✕</button></div>
   <div id="flows-list"></div>
   <p class="fd-hint">这里是同一目录下由本 skill 生成的所有流程图（按修改时间倒序）。用 HTTP 打开时会实时刷新；直接双击本地文件时用的是生成当时的清单。</p>
@@ -854,6 +863,21 @@
   });
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function eachSvg(fn){ VN.forEach(function(n){ if(V[n]) fn(V[n].svg, n); }); }
+  // 节点键盘可达：给每个 node 加 tabindex/role/aria-label，Enter/空格＝点击选中
+  function wireNodeKeyboard(){
+    eachSvg(function(s,n){
+      s.querySelectorAll('.node').forEach(function(g){
+        var m=meta[g.getAttribute('data-id')]||{};
+        g.setAttribute('tabindex','0');
+        g.setAttribute('role','button');
+        g.setAttribute('aria-label', (m.label||m.id||'')+(m.statusLabel?'，'+m.statusLabel:'')+(m.time?'，'+m.time:''));
+      });
+      s.addEventListener('keydown',function(e){
+        var g=e.target.closest?e.target.closest('.node'):null;
+        if(g&&(e.key==='Enter'||e.key===' ')){ e.preventDefault(); select(g.getAttribute('data-id')); }
+      });
+    });
+  }
   function relayout(){ VN.forEach(function(n){ if(V[n]) measure(V[n]); }); paintActive(); }
   function setPanel(open){ document.body.classList.toggle('panel-open', !!open); relayout(); }
   function select(id){
@@ -1058,9 +1082,15 @@
     }).join('');
   }
   function openFlows(open){
-    document.getElementById('flows-drawer').classList.toggle('open', !!open);
+    var dr=document.getElementById('flows-drawer');
+    dr.classList.toggle('open', !!open);
+    dr.setAttribute('aria-hidden', open?'false':'true');
+    // inert 立刻生效（visibility 的过渡延迟会让"打开即聚焦"失效），关闭时整棵子树不可 Tab / 不可点
+    if('inert' in dr) dr.inert = !open;
+    document.getElementById('flows-toggle').setAttribute('aria-expanded', open?'true':'false');
     document.getElementById('drawer-scrim').classList.toggle('open', !!open);
-    if(open){ renderFlows(); refreshFlows(); }
+    if(open){ renderFlows(); refreshFlows(); document.getElementById('flows-close').focus(); }
+    else if(document.activeElement&&dr.contains(document.activeElement)) document.getElementById('flows-toggle').focus();
   }
   function refreshFlows(){
     if(location.protocol.indexOf('http')!==0) return;
@@ -1073,7 +1103,13 @@
   document.getElementById('drawer-scrim').onclick=function(){ openFlows(false); };
   function download(name,blob){ var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1500); }
   function variantTag(){ return active==='portrait' ? '-竖版' : '-横版'; }
-  function svgSource(){ var v=cur(); var c=v.svg.cloneNode(true); c.setAttribute('xmlns','http://www.w3.org/2000/svg'); c.removeAttribute('id'); return '<?xml version="1.0" encoding="UTF-8"?>\n'+c.outerHTML; }
+  function svgSource(){
+    var v=cur(); var c=v.svg.cloneNode(true);
+    c.setAttribute('xmlns','http://www.w3.org/2000/svg'); c.removeAttribute('id');
+    // 导出件不带交互用的无障碍属性，保持与以前一致
+    c.querySelectorAll('[tabindex],[role],[aria-label]').forEach(function(x){ x.removeAttribute('tabindex'); x.removeAttribute('role'); x.removeAttribute('aria-label'); });
+    return '<?xml version="1.0" encoding="UTF-8"?>\n'+c.outerHTML;
+  }
   document.getElementById('export-svg').onclick=function(){ download(data.slug+variantTag()+'.svg', new Blob([svgSource()],{type:'image/svg+xml'})); };
   document.getElementById('export-png').onclick=function(){
     var v=cur(); var src=svgSource(); var img=new Image(); var scale=2;
@@ -1144,8 +1180,16 @@
     if(e.key==='+'||e.key==='='){ zoomBy(1.2); }
     if(e.key==='-'){ zoomBy(1/1.2); }
     if(e.key==='0'){ fitAll(); }
-    if(e.key==='Escape'){ select(null); }
+    if(e.key==='Escape'){
+      var dr=document.getElementById('flows-drawer');
+      if(dr.classList.contains('open')){ openFlows(false); return; }
+      if(document.getElementById('mmd-panel').classList.contains('open')){ document.getElementById('mmd-panel').classList.remove('open'); return; }
+      select(null);
+    }
   });
+  // 抽屉首屏就是关闭态：立刻 inert，免得 Tab 一上来就钻进屏外的链接
+  (function(){ var dr=document.getElementById('flows-drawer'); if(dr&&('inert' in dr)) dr.inert=true; })();
+  wireNodeKeyboard();
   setVariant(autoVariant(), true);
   renderPanel(null);
 })();

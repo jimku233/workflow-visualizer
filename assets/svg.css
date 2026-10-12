@@ -22,6 +22,8 @@
     .node{cursor:pointer}
     .node .node-bg{stroke-width:1.5}
     .node:hover .node-bg{stroke-width:2.3}
+  .node:focus{outline:none}
+  .node:focus-visible .node-bg{stroke:var(--accent);stroke-width:3;stroke-dasharray:none}
     .node.k-task .node-bg,.node.k-milestone .node-bg{fill:var(--n-task);stroke:var(--n-task-s)}
     .node.k-decision .node-bg{fill:var(--n-dec);stroke:var(--n-dec-s)}
     .node.k-start .node-bg,.node.k-end .node-bg{fill:var(--n-se);stroke:var(--n-se-s)}

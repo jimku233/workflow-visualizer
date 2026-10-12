@@ -104,6 +104,21 @@
   });
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function eachSvg(fn){ VN.forEach(function(n){ if(V[n]) fn(V[n].svg, n); }); }
+  // 节点键盘可达：给每个 node 加 tabindex/role/aria-label，Enter/空格＝点击选中
+  function wireNodeKeyboard(){
+    eachSvg(function(s,n){
+      s.querySelectorAll('.node').forEach(function(g){
+        var m=meta[g.getAttribute('data-id')]||{};
+        g.setAttribute('tabindex','0');
+        g.setAttribute('role','button');
+        g.setAttribute('aria-label', (m.label||m.id||'')+(m.statusLabel?'，'+m.statusLabel:'')+(m.time?'，'+m.time:''));
+      });
+      s.addEventListener('keydown',function(e){
+        var g=e.target.closest?e.target.closest('.node'):null;
+        if(g&&(e.key==='Enter'||e.key===' ')){ e.preventDefault(); select(g.getAttribute('data-id')); }
+      });
+    });
+  }
   function relayout(){ VN.forEach(function(n){ if(V[n]) measure(V[n]); }); paintActive(); }
   function setPanel(open){ document.body.classList.toggle('panel-open', !!open); relayout(); }
   function select(id){
@@ -308,9 +323,15 @@
     }).join('');
   }
   function openFlows(open){
-    document.getElementById('flows-drawer').classList.toggle('open', !!open);
+    var dr=document.getElementById('flows-drawer');
+    dr.classList.toggle('open', !!open);
+    dr.setAttribute('aria-hidden', open?'false':'true');
+    // inert 立刻生效（visibility 的过渡延迟会让"打开即聚焦"失效），关闭时整棵子树不可 Tab / 不可点
+    if('inert' in dr) dr.inert = !open;
+    document.getElementById('flows-toggle').setAttribute('aria-expanded', open?'true':'false');
     document.getElementById('drawer-scrim').classList.toggle('open', !!open);
-    if(open){ renderFlows(); refreshFlows(); }
+    if(open){ renderFlows(); refreshFlows(); document.getElementById('flows-close').focus(); }
+    else if(document.activeElement&&dr.contains(document.activeElement)) document.getElementById('flows-toggle').focus();
   }
   function refreshFlows(){
     if(location.protocol.indexOf('http')!==0) return;
@@ -323,7 +344,13 @@
   document.getElementById('drawer-scrim').onclick=function(){ openFlows(false); };
   function download(name,blob){ var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1500); }
   function variantTag(){ return active==='portrait' ? '-竖版' : '-横版'; }
-  function svgSource(){ var v=cur(); var c=v.svg.cloneNode(true); c.setAttribute('xmlns','http://www.w3.org/2000/svg'); c.removeAttribute('id'); return '<?xml version="1.0" encoding="UTF-8"?>\n'+c.outerHTML; }
+  function svgSource(){
+    var v=cur(); var c=v.svg.cloneNode(true);
+    c.setAttribute('xmlns','http://www.w3.org/2000/svg'); c.removeAttribute('id');
+    // 导出件不带交互用的无障碍属性，保持与以前一致
+    c.querySelectorAll('[tabindex],[role],[aria-label]').forEach(function(x){ x.removeAttribute('tabindex'); x.removeAttribute('role'); x.removeAttribute('aria-label'); });
+    return '<?xml version="1.0" encoding="UTF-8"?>\n'+c.outerHTML;
+  }
   document.getElementById('export-svg').onclick=function(){ download(data.slug+variantTag()+'.svg', new Blob([svgSource()],{type:'image/svg+xml'})); };
   document.getElementById('export-png').onclick=function(){
     var v=cur(); var src=svgSource(); var img=new Image(); var scale=2;
@@ -394,8 +421,16 @@
     if(e.key==='+'||e.key==='='){ zoomBy(1.2); }
     if(e.key==='-'){ zoomBy(1/1.2); }
     if(e.key==='0'){ fitAll(); }
-    if(e.key==='Escape'){ select(null); }
+    if(e.key==='Escape'){
+      var dr=document.getElementById('flows-drawer');
+      if(dr.classList.contains('open')){ openFlows(false); return; }
+      if(document.getElementById('mmd-panel').classList.contains('open')){ document.getElementById('mmd-panel').classList.remove('open'); return; }
+      select(null);
+    }
   });
+  // 抽屉首屏就是关闭态：立刻 inert，免得 Tab 一上来就钻进屏外的链接
+  (function(){ var dr=document.getElementById('flows-drawer'); if(dr&&('inert' in dr)) dr.inert=true; })();
+  wireNodeKeyboard();
   setVariant(autoVariant(), true);
   renderPanel(null);
 })();
