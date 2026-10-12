@@ -5,7 +5,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const OUT = join(REPO, 'tools/tests/.tmp');
+const OUT = join(REPO, 'tools/tests/.tmp/roundtrip');
 mkdirSync(OUT, { recursive: true });
 const flow = REPO + '/scripts/flow.mjs';
 const run = (args) => execFileSync(process.execPath, [flow, ...args], { stdio: 'ignore' });

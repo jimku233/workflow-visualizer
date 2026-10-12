@@ -128,10 +128,261 @@ function fail(msg) {
  * 支持：flowchart TD|TB|LR、A[文本]、A(文本)、A{判断}、A((圆))、A[[子程序]]、
  *      -->、-.->、==>、---、-->|标签|、链式 A --> B --> C、subgraph ... end、%% 注释。
  */
-function parseMermaid(text) {
+// 当前 CLI 一次只处理一个输入；保留原文用于 JSON 结构错误的行列定位。
+let activeSource = { file: '<输入>', text: '' };
+
+function locAt(text, offset, baseLine = 1, baseCol = 1) {
+  let line = baseLine, col = baseCol;
+  const end = Math.max(0, Math.min(Number.isFinite(offset) ? offset : 0, text.length));
+  for (let i = 0; i < end; i++) {
+    if (text[i] === '\n') { line++; col = 1; }
+    else col++;
+  }
+  return { line, col };
+}
+
+function failAt(file, line, col, message) {
+  fail(`${file || '<输入>'}:${line}:${col}: ${message}`);
+}
+
+function sourceFail(message, hint = {}) {
+  const src = activeSource || { file: '<输入>', text: '' };
+  const text = src.text || '';
+  let offset = 0;
+  if (hint.offset !== undefined) offset = hint.offset;
+  else if (hint.property) {
+    const escaped = hint.property.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp('"' + escaped + '"\\s*:\\s*', 'g');
+    let m;
+    while ((m = re.exec(text))) {
+      const value = hint.value === undefined ? null : JSON.stringify(hint.value);
+      if (value === null || text.startsWith(value, re.lastIndex)) { offset = m.index; break; }
+    }
+  } else if (hint.value !== undefined) {
+    const needle = JSON.stringify(hint.value);
+    const found = text.indexOf(needle);
+    if (found >= 0) offset = found;
+  }
+  const at = locAt(text, offset, 1, 1);
+  failAt(src.file, at.line, at.col, message);
+}
+
+function scanStatements(source, file, lineOffset = 0) {
+  const statements = [];
+  let buffer = '', hasStart = false;
+  let line = 1 + lineOffset, col = 1;
+  let startLine = line, startCol = col;
+  let quote = null, quoteOffset = -1, escaped = false;
+  let pipeLabel = false, pipeLabelOffset = -1;
+  const stack = [];
+  const append = (ch) => {
+    if (!hasStart) { hasStart = true; startLine = line; startCol = col; }
+    buffer += ch;
+  };
+  const emit = () => {
+    if (buffer.trim()) statements.push({ text: buffer, line: startLine, col: startCol });
+    buffer = '';
+    hasStart = false;
+  };
+  const matching = { '(': ')', '[': ']', '{': '}' };
+  const isOpen = (ch) => Object.prototype.hasOwnProperty.call(matching, ch);
+  const canStartQuote = (i) => {
+    let j = i - 1;
+    while (j >= 0 && /[ \t\r]/.test(source[j])) j--;
+    if (j < 0 || source[j] === '\n' || source[j] === '|' || isOpen(source[j])) return true;
+    // subgraph "带空格的标题"：引号前是空白，且本段还没出现节点形状。
+    return /[ \t]/.test(source[i - 1] || '') && /(?:^|\s)subgraph\s*$/i.test(buffer.trimEnd());
+  };
+
+  for (let i = 0; i < source.length; i++) {
+    const ch = source[i];
+    if (pipeLabel) {
+      append(ch);
+      if (ch === '|') pipeLabel = false;
+      if (ch === '\n') { line++; col = 1; } else col++;
+      continue;
+    }
+    if (!quote && stack.length === 0 && ch === '|' && /(?:-->|-\.->|==>|---|-\.-|--x|--o)\s*$/.test(buffer.trimEnd())) {
+      append(ch); pipeLabel = true; pipeLabelOffset = i; col++; continue;
+    }
+    if (quote) {
+      append(ch);
+      if (escaped) escaped = false;
+      else if (ch === '\\') escaped = true;
+      else if (ch === quote) quote = null;
+      if (ch === '\n') { line++; col = 1; } else col++;
+      continue;
+    }
+
+    if (!quote && stack.length === 0 && buffer.trim() === '' && source.startsWith('%%', i)) {
+      const nl = source.indexOf('\n', i);
+      if (nl < 0) { emit(); break; }
+      emit(); i = nl; line++; col = 1; continue;
+    }
+    if ((ch === '"' || ch === "'") && canStartQuote(i)) {
+      append(ch); quote = ch; quoteOffset = i;
+      col++;
+      continue;
+    }
+    if (ch === '\n') {
+      if (stack.length === 0) emit();
+      else append(ch);
+      line++; col = 1;
+      continue;
+    }
+    if (ch === ';' && stack.length === 0) {
+      emit(); col++;
+      continue;
+    }
+    append(ch);
+    if (isOpen(ch)) stack.push({ close: matching[ch], line, col, offset: i });
+    else if (ch === ')' || ch === ']' || ch === '}') {
+      if (stack.length && stack[stack.length - 1].close === ch) stack.pop();
+    }
+    col++;
+  }
+
+  if (pipeLabel) {
+    const at = locAt(source, pipeLabelOffset, 1 + lineOffset, 1);
+    failAt(file, at.line, at.col, '未闭合的连线标签');
+  }
+  if (quote) {
+    const at = locAt(source, quoteOffset, 1 + lineOffset, 1);
+    failAt(file, at.line, at.col, '未闭合的引号');
+  }
+  if (stack.length) {
+    const open = stack[0];
+    failAt(file, open.line, open.col, '未闭合的节点/语法形状括号');
+  }
+  emit();
+  return statements;
+}
+
+const NODE_ID_RE = /^[A-Za-z0-9_\u4e00-\u9fff][\w\u4e00-\u9fff.\-]*/;
+const LINK_TOKENS = ['-.->', '==>', '-->', '---', '-.-', '--x', '--o'];
+
+function offsetLoc(stmt, offset) {
+  return locAt(stmt.text, offset, stmt.line, stmt.col);
+}
+
+function syntaxFail(file, stmt, offset, message) {
+  const actualOffset = offset === 0 ? Math.max(0, stmt.text.search(/\S/)) : offset;
+  const at = offsetLoc(stmt, actualOffset);
+  failAt(file, at.line, at.col, message);
+}
+
+function unquoteLabel(label) {
+  const t = String(label).trim();
+  if (t.length >= 2 && ((t[0] === '"' && t.at(-1) === '"') || (t[0] === "'" && t.at(-1) === "'"))) {
+    return t.slice(1, -1).replace(/\\(["'\\])/g, '$1').replace(/&quot;/g, '"').trim();
+  }
+  return t.replace(/&quot;/g, '"');
+}
+
+function splitLinks(stmt, file) {
+  const text = stmt.text;
+  const segments = [];
+  const links = [];
+  const stack = [];
+  const matching = { '(': ')', '[': ']', '{': '}' };
+  let quote = null, escaped = false, start = 0, pipeLabel = false;
+  const canStartQuote = (i) => {
+    let j = i - 1;
+    while (j >= 0 && /[ \t\r]/.test(text[j])) j--;
+    return j < 0 || text[j] === '|' || Object.prototype.hasOwnProperty.call(matching, text[j]) || (/[ \t]/.test(text[i - 1] || '') && /(?:^|\s)subgraph\s*$/i.test(text.slice(0, i).trimEnd()));
+  };
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (pipeLabel) { if (ch === '|') pipeLabel = false; continue; }
+    if (!quote && stack.length === 0 && ch === '|' && /(?:-->|-\.->|==>|---|-\.-|--x|--o)\s*$/.test(text.slice(0, i).trimEnd())) { pipeLabel = true; continue; }
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (ch === '\\') escaped = true;
+      else if (ch === quote) quote = null;
+      continue;
+    }
+    if ((ch === '"' || ch === "'") && canStartQuote(i)) { quote = ch; continue; }
+    if (Object.prototype.hasOwnProperty.call(matching, ch)) { stack.push(matching[ch]); continue; }
+    if (ch === ')' || ch === ']' || ch === '}') {
+      if (stack.length && stack[stack.length - 1] === ch) stack.pop();
+      continue;
+    }
+    if (stack.length) continue;
+    const op = LINK_TOKENS.find((token) => text.startsWith(token, i));
+    if (op) {
+      segments.push({ text: text.slice(start, i), offset: start });
+      links.push({ text: op, offset: i });
+      i += op.length - 1;
+      start = i + 1;
+    }
+  }
+  segments.push({ text: text.slice(start), offset: start });
+  if (!links.length) return { segments, links };
+  if (segments.length !== links.length + 1) syntaxFail(file, stmt, 0, '不完整的连线语句');
+  return { segments, links };
+}
+
+function parseNodeExpr(raw, stmt, file, baseOffset) {
+  const lead = raw.length - raw.trimStart().length;
+  const text = raw.trim();
+  const offset = baseOffset + lead;
+  if (!text) syntaxFail(file, stmt, offset, '缺少节点');
+  const idMatch = NODE_ID_RE.exec(text);
+  if (!idMatch) syntaxFail(file, stmt, offset, '不支持的语法：节点必须以合法 id 开始');
+  const id = idMatch[0];
+  let pos = id.length;
+  while (pos < text.length && /\s/.test(text[pos])) pos++;
+  if (pos === text.length) return { id, label: undefined, kind: undefined };
+
+  const rest = text.slice(pos);
+  let open = '', close = '', kind = 'task';
+  if (rest.startsWith('[[')) { open = '[['; close = ']]'; }
+  else if (rest.startsWith('{{')) { open = '{{'; close = '}}'; }
+  else if (rest.startsWith('((')) { open = '(('; close = '))'; kind = 'circle'; }
+  else if (rest.startsWith('[')) { open = '['; close = ']'; }
+  else if (rest.startsWith('(')) { open = '('; close = ')'; }
+  else if (rest.startsWith('{')) { open = '{'; close = '}'; kind = 'decision'; }
+  else syntaxFail(file, stmt, offset + pos, '不支持的节点语法（形状后存在多余内容）');
+
+  const closers = { '(': ')', '[': ']', '{': '}' };
+  const shapeStack = [...open].map((ch) => closers[ch]).reverse();
+  let quote = null, escaped = false, end = -1;
+  for (let i = open.length; i < rest.length; i++) {
+    const ch = rest[i];
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (ch === '\\') escaped = true;
+      else if (ch === quote) quote = null;
+      continue;
+    }
+    let j = i - 1;
+    while (j >= 0 && /[ \t\r]/.test(rest[j])) j--;
+    if ((ch === '"' || ch === "'") && (j < 0 || Object.prototype.hasOwnProperty.call(closers, rest[j]) || /\s/.test(rest[i - 1] || ''))) {
+      quote = ch; continue;
+    }
+    if (Object.prototype.hasOwnProperty.call(closers, ch)) { shapeStack.push(closers[ch]); continue; }
+    if (ch === ')' || ch === ']' || ch === '}') {
+      if (shapeStack.at(-1) !== ch) syntaxFail(file, stmt, offset + pos + i, '节点形状括号不匹配');
+      shapeStack.pop();
+      if (!shapeStack.length) { end = i; break; }
+    }
+  }
+  if (quote) syntaxFail(file, stmt, offset + pos + rest.length - 1, '未闭合的节点标签引号');
+  if (end < 0) syntaxFail(file, stmt, offset + pos, '未闭合的节点形状');
+  if (rest.slice(end + 1).trim()) syntaxFail(file, stmt, offset + pos + end + 1, '节点形状后存在多余内容');
+
+  const closeStart = end - close.length + 1;
+  let label = rest.slice(open.length, closeStart).trim();
+  // Mermaid 的圆括号单层形式按普通环节处理；只有 ((...)) 走圆形节点语义。
+  if (open === '(') kind = 'task';
+  label = unquoteLabel(label);
+  return { id, label, kind };
+}
+
+function parseMermaid(text, file = '<输入>', lineOffset = 0) {
+  const source = String(text);
   const spec = { title: '', subtitle: '', direction: 'TD', nodes: [], edges: [], groups: [] };
   const nodes = new Map();
-  const edges = [];
   const groupStack = [];
 
   const touch = (id, label, kind) => {
@@ -145,126 +396,130 @@ function parseMermaid(text) {
     if (kind !== undefined) n.kind = kind;
     return n;
   };
+  const addToGroup = (id) => {
+    const g = groupStack.at(-1);
+    if (g && !g.members.includes(id)) g.members.push(id);
+  };
+  const statements = scanStatements(source, file, lineOffset);
 
-  // 一行里可能有多条语句，用 ; 再切一次
-  const lines = String(text).split(/\r?\n/).flatMap((l) => l.split(';'));
-
-  for (let raw of lines) {
-    let line = raw.trim();
-    if (!line) continue;
-    if (line.startsWith('%%')) continue;
-
+  for (const stmt of statements) {
+    const line = stmt.text.trim();
+    if (!line || line.startsWith('%%')) continue;
     let m;
-    if ((m = /^(?:flowchart|graph)\s+(TD|TB|BT|LR|RL)?/i.exec(line))) {
+
+    if (/^(?:flowchart|graph)\b/i.test(line)) {
+      m = /^(?:flowchart|graph)\s+(TD|TB|BT|LR|RL)?\s*$/i.exec(line);
+      if (!m) syntaxFail(file, stmt, 0, '无效的 flowchart/graph 声明；方向应为 TD、TB、BT、LR 或 RL');
       const d = (m[1] || 'TD').toUpperCase();
       spec.direction = d === 'LR' || d === 'RL' ? 'LR' : 'TD';
       continue;
     }
-    if (/^(?:classDef|class|style|linkStyle|click|direction)\b/i.test(line)) continue;
-    if ((m = /^subgraph\s+(.*)$/i.exec(line))) {
-      let label = m[1].trim().replace(/^["']|["']$/g, '');
-      const gid = 'g' + (spec.groups.length + 1);
-      const g = { id: gid, label, members: [] };
+    if (/^(?:classDef|class|style|linkStyle|click|direction)\b/i.test(line)) {
+      syntaxFail(file, stmt, 0, '不支持的 Mermaid 语法：' + line.split(/\s+/)[0]);
+    }
+    if (/^subgraph\b/i.test(line)) {
+      m = /^subgraph\s+(.+?)\s*$/i.exec(line);
+      if (!m) syntaxFail(file, stmt, 0, 'subgraph 必须提供分组名称');
+      const label = unquoteLabel(m[1]);
+      const g = { id: 'g' + (spec.groups.length + 1), label, members: [], _loc: offsetLoc(stmt, stmt.text.search(/subgraph/i)) };
       spec.groups.push(g);
       groupStack.push(g);
       continue;
     }
-    if (/^end$/i.test(line)) { groupStack.pop(); continue; }
+    if (/^end\b/i.test(line)) {
+      if (!/^end$/i.test(line)) syntaxFail(file, stmt, 0, 'end 后存在不支持的内容');
+      if (!groupStack.length) syntaxFail(file, stmt, 0, '存在没有匹配 subgraph 的 end');
+      groupStack.pop();
+      continue;
+    }
 
-    // 解析节点/连线交替序列
-    const parts = line.split(/\s*(-->|-\.->|==>|---|-\.-|--x|--o)\s*/);
-    let pendingLabel = null;
-    for (let i = 0; i < parts.length; i += 2) {
-      let spec0 = (parts[i] || '').trim();
-      const link = i + 1 < parts.length ? parts[i + 1] : null;
+    const { segments, links } = splitLinks(stmt, file);
+    if (!segments.length) continue;
+    if (segments.length === 1 && !segments[0].text.trim()) syntaxFail(file, stmt, 0, '空语句');
 
-      // 连线标签写在下一段开头：-->|有|
-      const lm = /^\|([^|]*)\|/.exec(spec0);
-      if (lm) {
-        pendingLabel = lm[1].trim();
-        if (pendingLabel.length > 1 && pendingLabel.startsWith('"') && pendingLabel.endsWith('"')) {
-          pendingLabel = pendingLabel.slice(1, -1).replace(/&quot;/g, '"');
+    let previous = null;
+    for (let i = 0; i < segments.length; i++) {
+      let segment = segments[i];
+      let nodeText = segment.text;
+      let nodeOffset = segment.offset;
+      let edgeLabel;
+      const leading = nodeText.length - nodeText.trimStart().length;
+      const trimmed = nodeText.trim();
+      if (i > 0) {
+        const labelMatch = /^\|([^|]*)\|\s*/.exec(trimmed);
+        if (labelMatch) {
+          edgeLabel = unquoteLabel(labelMatch[1]).replace(/\u2223/g, '|');
+          nodeOffset += leading + labelMatch[0].length;
+          nodeText = trimmed.slice(labelMatch[0].length);
         }
-        spec0 = spec0.slice(lm[0].length).trim();
+      } else if (trimmed.startsWith('|')) {
+        syntaxFail(file, stmt, segment.offset + leading, '连线标签必须跟在连线操作符后面');
       }
-
-      if (spec0) {
-        const nm = /^([A-Za-z0-9_\u4e00-\u9fff][\w\u4e00-\u9fff.\-]*)\s*(\(\([\s\S]*\)\)|\[\[[\s\S]*\]\]|\{\{[\s\S]*\}\}|\[[\s\S]*\]|\([\s\S]*\)|\{[\s\S]*\})?/.exec(spec0);
-        if (nm) {
-          const id = nm[1];
-          let label;
-          const sh = nm[2];
-          if (sh) {
-            // shape → kind：{} 判断、(( )) 圆（起点/终点，由入出度补全）、其余按普通环节
-            const kind =
-              sh.startsWith('{') && !sh.startsWith('{{') ? 'decision' :
-              sh.startsWith('((') ? 'circle' : 'task';
-            label = sh.replace(/^(\(\(|\[\[|\{\{|\[|\(|\{)/, '').replace(/(\)\)|\]\]|\}\}|\]|\)|\})$/, '');
-            label = label.trim();
-            const q = label[0];
-            if ((q === '"' || q === "'") && label.length > 1 && label.endsWith(q)) label = label.slice(1, -1).trim();
-      label = label.replace(/&quot;/g, '"');
-            touch(id, label, kind);
-          } else {
-            touch(id);
-          }
-          if (i > 0 && parts[i - 1] !== undefined) {
-            // 记录连线：上一段的节点 → 本段节点
-            const prevSpec = (parts[i - 2] || '').trim();
-            const pm = pm0(prevSpec);
-            if (pm) {
-              edges.push({ from: pm, to: id, label: pendingLabel || undefined, style: styleOf(parts[i - 1]) });
-            }
-          }
-          if (groupStack.length && !groupStack[groupStack.length - 1].members.includes(id)) {
-            groupStack[groupStack.length - 1].members.push(id);
-          }
-          pendingLabel = null;
-          continue;
-        }
-        // 独立成行的裸节点（subgraph 成员）
-        const bare = /^([A-Za-z0-9_\u4e00-\u9fff][\w\u4e00-\u9fff.\-]*)$/.exec(spec0);
-        if (bare) {
-          touch(bare[1]);
-          if (groupStack.length && !groupStack[groupStack.length - 1].members.includes(bare[1])) {
-            groupStack[groupStack.length - 1].members.push(bare[1]);
-          }
-        }
+      const node = parseNodeExpr(nodeText, stmt, file, nodeOffset);
+      touch(node.id, node.label, node.kind);
+      addToGroup(node.id);
+      if (previous) {
+        const link = links[i - 1];
+        if (!link) syntaxFail(file, stmt, segment.offset, '缺少连线操作符');
+        spec.edges.push({
+          from: previous.id,
+          to: node.id,
+          label: edgeLabel || undefined,
+          style: link.text.includes('.') ? 'dashed' : 'solid',
+        });
       }
-      void link;
+      previous = node;
     }
   }
 
-  function pm0(s) {
-    const m = /^([A-Za-z0-9_\u4e00-\u9fff][\w\u4e00-\u9fff.\-]*)/.exec(s.trim());
-    return m ? m[1] : undefined;
+  if (groupStack.length) {
+    const g = groupStack.at(-1);
+    const loc = g._loc || { line: 1 + lineOffset, col: 1 };
+    failAt(file, loc.line, loc.col, 'subgraph 未与 end 配对：缺少 end');
   }
-  function styleOf(link) {
-    if (!link) return 'solid';
-    return link.includes('.') ? 'dashed' : 'solid';
-  }
-
-  spec.edges = edges;
+  spec.edges = spec.edges || [];
   return spec;
 }
-
-/** 从 .md 中抽出 ```mermaid 代码块；没有就整篇当 mermaid。 */
+/** 从 .md 中抽出 ```mermaid 代码块；没有就整篇当 mermaid。保留原文行偏移。 */
 function extractMermaid(text) {
-  // 只认带 mermaid 语言标记的围栏；没有围栏时把整段文本当 Mermaid（保留旧行为）。
-  // 原来写成 (?:mermaid)? —— Markdown 里**前面**的普通代码块会被当成 Mermaid 抓走。
   const m = /```mermaid[ \t]*\r?\n([\s\S]*?)```/i.exec(text);
-  return m ? m[1] : text;
+  if (!m) return { text, lineOffset: 0 };
+  const contentAt = m.index + m[0].indexOf('\n') + 1;
+  return { text: m[1], lineOffset: (text.slice(0, contentAt).match(/\n/g) || []).length };
 }
 
 function loadSpec(file) {
-  if (!existsSync(file)) fail('输入文件不存在：' + file);
+  if (!existsSync(file)) failAt(file, 1, 1, '输入文件不存在');
   const text = readFileSync(file, 'utf8');
   const ext = extname(file).toLowerCase();
+  activeSource = { file, text };
   if (ext === '.json') {
-    try { return JSON.parse(text); } catch (e) { fail('JSON 解析失败：' + e.message); }
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      let offset;
+      const pos = /position\s+(\d+)/i.exec(String(e?.message || ''));
+      if (pos) offset = Number(pos[1]);
+      const lc = /line\s+(\d+)\s+column\s+(\d+)/i.exec(String(e?.message || ''));
+      if (offset === undefined && lc) {
+        const lines = text.split(/\n/);
+        offset = 0;
+        for (let i = 0; i < Number(lc[1]) - 1 && i < lines.length; i++) offset += lines[i].length + 1;
+        offset += Math.max(0, Number(lc[2]) - 1);
+      }
+      const at = locAt(text, offset === undefined ? 0 : offset, 1, 1);
+      failAt(file, at.line, at.col, 'JSON 解析失败：' + e.message);
+    }
   }
-  if (ext === '.md' || ext === '.markdown') return parseMermaid(extractMermaid(text));
-  return parseMermaid(text);
+  if (ext === '.md' || ext === '.markdown') {
+    const extracted = extractMermaid(text);
+    const parsed = parseMermaid(extracted.text, file, extracted.lineOffset);
+    activeSource = { file, text };
+    return parsed;
+  }
+  const parsed = parseMermaid(text, file, 0);
+  activeSource = { file, text };
+  return parsed;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -272,10 +527,24 @@ function loadSpec(file) {
 // ─────────────────────────────────────────────────────────────
 
 function normalize(specIn) {
+  const src = activeSource || { file: '<输入>', text: '' };
+  const bad = (message, hint = {}) => sourceFail(message, hint);
+  if (!specIn || typeof specIn !== 'object' || Array.isArray(specIn)) {
+    bad('规格根必须是对象', { offset: 0 });
+  }
+
+  for (const key of ['nodes', 'edges', 'groups']) {
+    if (specIn[key] !== undefined && !Array.isArray(specIn[key])) {
+      bad(key + ' 必须是数组', { property: key });
+    }
+  }
+  const rawNodes = specIn.nodes ?? [];
+  const rawEdges = specIn.edges ?? [];
+  const rawGroups = specIn.groups ?? [];
   const spec = {
     title: specIn.title || '',
     subtitle: specIn.subtitle || '',
-    direction: (specIn.direction || 'TD').toUpperCase() === 'LR' ? 'LR' : 'TD',
+    direction: String(specIn.direction || 'TD').toUpperCase() === 'LR' ? 'LR' : 'TD',
     wrap: specIn.wrap === undefined ? 0 : Number(specIn.wrap),
     nodes: [],
     edges: [],
@@ -283,16 +552,22 @@ function normalize(specIn) {
   };
 
   const seen = new Set();
-  for (const raw of specIn.nodes || []) {
+  for (let i = 0; i < rawNodes.length; i++) {
+    const raw = rawNodes[i];
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+      bad('nodes[' + i + '] 必须是对象', { property: 'nodes' });
+    }
     const id = String(raw.id ?? '').trim();
-    if (!id) fail('存在没有 id 的节点');
-    if (seen.has(id)) fail('节点 id 重复：' + id);
+    if (!id) bad('存在没有 id 的节点', { property: 'id', value: raw.id });
+    if (seen.has(id)) bad('节点 id 重复：' + id, { property: 'id', value: id });
     seen.add(id);
-    let kind = String(raw.kind || '').toLowerCase();
+
+    let kind = raw.kind == null || raw.kind === '' ? 'task' : String(raw.kind).toLowerCase();
     if (kind === 'subroutine') kind = 'task';
-    if (!KINDS.has(kind)) kind = 'task';
-    let status = raw.status ? String(raw.status).toLowerCase() : undefined;
-    if (status && !STATUSES.has(status)) fail('未知 status：' + status + '（节点 ' + id + '）');
+    // circle 是 Mermaid 的内部节点类型，需保留给入/出度推断起点或终点。
+    if (!KINDS.has(kind) && kind !== 'circle') bad('未知 kind：' + kind + '（节点 ' + id + '）', { property: 'kind', value: raw.kind });
+    const status = raw.status ? String(raw.status).toLowerCase() : undefined;
+    if (status && !STATUSES.has(status)) bad('未知 status：' + status + '（节点 ' + id + '）', { property: 'status', value: raw.status });
     spec.nodes.push({
       id,
       label: raw.label !== undefined ? String(raw.label) : id,
@@ -307,39 +582,51 @@ function normalize(specIn) {
   }
 
   const ids = new Set(spec.nodes.map((n) => n.id));
-  for (const raw of specIn.edges || []) {
+  for (let i = 0; i < rawEdges.length; i++) {
+    const raw = rawEdges[i];
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) bad('edges[' + i + '] 必须是对象', { property: 'edges' });
     const from = String(raw.from ?? '').trim();
     const to = String(raw.to ?? '').trim();
-    if (!ids.has(from)) fail('连线起点不存在：' + from);
-    if (!ids.has(to)) fail('连线终点不存在：' + to);
-    spec.edges.push({
-      from,
-      to,
-      label: raw.label !== undefined ? String(raw.label) : '',
-      style: raw.style === 'dashed' ? 'dashed' : 'solid',
-    });
+    if (!ids.has(from)) bad('连线起点不存在：' + from, { property: 'from', value: raw.from });
+    if (!ids.has(to)) bad('连线终点不存在：' + to, { property: 'to', value: raw.to });
+    spec.edges.push({ from, to, label: raw.label !== undefined ? String(raw.label) : '', style: raw.style === 'dashed' ? 'dashed' : 'solid' });
   }
 
-  for (const g of specIn.groups || []) {
-    const members = (g.members || []).filter((m) => ids.has(m));
-    if (!members.length) continue;
-    spec.groups.push({ id: String(g.id || 'g' + spec.groups.length), label: String(g.label || ''), members });
+  const groupIds = new Set();
+  for (let i = 0; i < rawGroups.length; i++) {
+    const g = rawGroups[i];
+    if (!g || typeof g !== 'object' || Array.isArray(g)) bad('groups[' + i + '] 必须是对象', { property: 'groups' });
+    const gid = String(g.id || 'g' + i).trim();
+    if (!gid) bad('分组 id 不能为空', { property: 'id', value: g.id });
+    if (groupIds.has(gid)) bad('分组 id 重复：' + gid, { property: 'id', value: gid });
+    groupIds.add(gid);
+    if (g.members !== undefined && !Array.isArray(g.members)) bad('分组 members 必须是数组（分组 ' + gid + '）', { property: 'members', value: g.members });
+    const membersIn = g.members ?? [];
+    const members = [];
+    const memberSet = new Set();
+    for (const memberRaw of membersIn) {
+      const member = String(memberRaw ?? '').trim();
+      if (!ids.has(member)) bad('分组 ' + gid + ' 引用了不存在的节点：' + member, { value: memberRaw });
+      if (memberSet.has(member)) bad('分组 ' + gid + ' 中节点重复：' + member, { value: memberRaw });
+      memberSet.add(member);
+      members.push(member);
+    }
+    if (members.length) spec.groups.push({ id: gid, label: String(g.label || ''), members });
   }
 
-  // 圆形节点若没有入边 = 起点，没有出边 = 终点（Mermaid 里 ((x)) 语义模糊，这里补全）
+  // 圆形节点若没有入边 = 起点，没有出边 = 终点。
   const hasIn = new Set(spec.edges.map((e) => e.to));
   const hasOut = new Set(spec.edges.map((e) => e.from));
   for (const n of spec.nodes) {
     if (n.kind === 'start') continue;
-    const raw = (specIn.nodes || []).find((r) => String(r.id) === n.id) || {};
+    const raw = rawNodes.find((r) => String(r.id) === n.id) || {};
     if (String(raw.kind || '').toLowerCase() === 'circle' && !hasIn.has(n.id)) n.kind = 'start';
     else if (String(raw.kind || '').toLowerCase() === 'circle' && !hasOut.has(n.id)) n.kind = 'end';
   }
 
-  if (!spec.nodes.length) fail('没有任何节点');
+  if (!spec.nodes.length) bad('没有任何节点', { property: 'nodes' });
   return spec;
 }
-
 /** 分组标题（药丸 + "N 步"计数）的尺寸。布局阶段算包围盒、SVG 阶段画药丸，必须共用同一套算法。 */
 function bandTitleMetrics(label, countText) {
   const labelW = units(label) * 12.4 + 26;
@@ -1015,10 +1302,7 @@ function mmdLabel(s) {
   return MMD_SPECIAL.test(t) ? '"' + t.replace(/"/g, '&quot;') + '"' : t;
 }
 
-/**
- * 边标签专用：Mermaid 的 |...| 里没法放竖线（连引号也救不了 —— 解析器会在第一个 | 处截断），
- * 所以把 | 换成视觉等价的 ∣（U+2223）。节点/分组标签没这个问题，继续用 mmdLabel 的引号方案。
- */
+/** 边标签里的竖线用视觉等价的 U+2223 表示，避免冲突于 |标签| 分隔符；解析往返时还原。 */
 function mmdEdgeLabel(s) {
   return mmdLabel(String(s ?? '').replace(/\|/g, '\u2223'));
 }

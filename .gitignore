@@ -29,3 +29,6 @@ desktop.ini
 node_modules/
 *.log
 npm-debug.log*
+
+# 测试临时产物（基线 tools/tests/baseline/ 要提交，这里不要）
+tools/tests/.tmp/

@@ -4,7 +4,7 @@
 //     node regress.mjs check [label] [--repo <目录>] [--spec <规格>]
 //   默认 repo = 本仓库根（可发布副本），label = 默认示例名
 //   基线存在 _verify/baseline/ 下（几何 json + 完整 HTML），对比内容：几何数据 + 样式/脚本指纹 + HTML 逐行差异
-import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync, rmSync } from 'node:fs';
 import { join, dirname, basename } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -17,15 +17,16 @@ const LABEL = [argv[1], arg('label')].find((v) => v && !v.startsWith('--') && v 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = arg('repo', join(HERE, '..', '..'));   // 默认＝本仓库根
 const SPEC = arg('spec', join(REPO, 'examples/示例-饮品店日常.json'));
-const WORK = join(HERE, '.tmp');
+const WORK = join(HERE, '.tmp', 'regress');   // 独立子目录：产物 HTML 里会内嵌"同目录流程图清单"，与别的测试混放会造成假差异
 const BASE = join(HERE, 'baseline');
 const OUT = join(WORK, LABEL + '.html');
 const sha = (s) => createHash('sha256').update(s).digest('hex').slice(0, 12);
 // 产物里天然带渲染时间（流程索引快照的 mtime / updated），逐字节对比前先归一化——否则每次都会"有差异"
 const norm = (s) => s.replace(/"mtime":"[^"]*"/g, '"mtime":"<t>"').replace(/"mtimeMs":[\d.]+/g, '"mtimeMs":0').replace(/"updated":"[^"]*"/g, '"updated":"<t>"');
 
-// ── 渲染 ──
+// ── 渲染（每次都在干净目录里做，避免上次的产物混进"同目录清单"造成假差异）──
 function render() {
+  rmSync(WORK, { recursive: true, force: true });
   mkdirSync(WORK, { recursive: true });
   // 注意：受限沙箱下 node 的 piped stdio 子进程会 EPERM（命名管道被禁），所以用 stdio:'ignore'，
   // 渲染日志不需要捕获——真正的结果从产物 HTML 里读。
