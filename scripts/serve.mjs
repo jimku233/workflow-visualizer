@@ -203,6 +203,7 @@ function homeHeader(count, crumb, rootPath) {
   return `<div class="crumbs">${crumb}</div>
   <div class="head">
     <h1>🪄 流程图 · 共 ${count} 张</h1>
+    <button class="gear" id="help-btn" title="怎么用（点开看说明）" aria-controls="help" aria-expanded="false"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.2"/><path d="M6.3 6.2a1.8 1.8 0 113 1.4c-.6.4-.9.7-.9 1.4"/><circle cx="8" cy="11.6" r=".7" fill="currentColor" stroke="none"/></svg><span>怎么用</span></button>
     <button class="gear" id="gear" title="显示设置"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.4"/><path d="M8 1.8v1.8M8 12.4v1.8M1.8 8h1.8M12.4 8h1.8M3.6 3.6l1.3 1.3M11.1 11.1l1.3 1.3M12.4 3.6l-1.3 1.3M4.9 11.1l-1.3 1.3"/></svg>显示设置</button>
   </div>
   <p class="sub">点卡片打开；手机和电脑看到的是同一批文件。</p>
@@ -224,6 +225,17 @@ function homeHeader(count, crumb, rootPath) {
     <span class="only-pc">点卡片看图。看图时可滚轮缩放、按住拖拽平移；外观随时在右上角「显示设置」里改。</span>
     <span class="only-touch">点卡片看图。图上可单指拖动、双指缩放、点环节看详情；外观在右上角「显示设置」里改。</span>
   </p>
+  <div id="help">
+    <p class="st">三件最重要的事</p>
+    <div class="row"><span class="k">① 看图</span><span>点卡片打开流程图；在图上<b>点任意环节</b>看时间 / 负责人 / 说明，再点空白收起。底部工具栏能切 <b>竖版 / 横版</b>、切明暗、导出 SVG / PNG；<b>🔒</b> 只锁这一张的颜色。</span></div>
+    <div class="row"><span class="k">② 搜索</span><span>搜环节名、负责人、说明。结果清单里：<b>蓝边</b>=标题 / id / 时间命中，<b>黄色点线</b>=只在说明或备注里命中（所以命中数常比图上看到的多）。<b>↑ ↓</b> 或 <b>Enter</b> 连着翻命中，<b>Esc</b> 清空；勾选「自动聚焦命中」会跟着跳到那一步。</span></div>
+    <div class="row"><span class="k">③ 键盘</span><span><b>Tab</b> 停在每个环节上、<b>Enter</b>/空格 打开详情；<b>+</b> <b>-</b> 缩放、<b>0</b> 适配整幅。抽屉（全部流程图）用 <b>Esc</b> 关闭。</span></div>
+    <p class="st" style="margin-top:14px">手机上看</p>
+    <div class="row"><span class="k">同一 Wi-Fi</span><span>在电脑上跑 <code>node scripts/serve.mjs &lt;产物目录&gt; 8765</code>，手机浏览器打开 <code>http://&lt;电脑的局域网IP&gt;:8765/</code>。手机端：单指拖动、双指缩放、轻点环节看详情。</span></div>
+    <p class="st" style="margin-top:14px">更新与文档</p>
+    <div class="row"><span class="k">图是快照</span><span>产物是自包含 HTML，<b>不会自动更新</b>：改了流程要重新渲染。首页会把用旧版本渲染的文件标成「旧版渲染」，跑 <code>node scripts/flow.mjs refresh &lt;目录&gt;</code> 一次全刷。</span></div>
+    <div class="row"><span class="k">文档在哪</span><span>技能目录里（用编辑器打开）：<code>README.md</code> 给人看 · <code>SKILL.md</code> 给 agent 看 · <code>CHANGELOG.md</code> 改了什么 · <code>docs/interfaces.md</code> 接口契约。</span></div>
+  </div>
   <div id="settings">
     <p class="st">外观</p>
     <div class="opts">

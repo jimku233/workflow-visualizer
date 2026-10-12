@@ -14,6 +14,14 @@
     });
   }
   document.getElementById('gear').onclick=function(){ document.getElementById('settings').classList.toggle('open'); };
+// 「怎么用」：和"显示设置"一样是折叠面板；?help=1 直接展开（截图/分享链接用）
+(function(){
+  var b=document.getElementById('help-btn'), h=document.getElementById('help');
+  if(!b||!h) return;
+  function set(open){ h.classList.toggle('open', open); b.setAttribute('aria-expanded', open?'true':'false'); }
+  b.onclick=function(){ set(!h.classList.contains('open')); };
+  if(/[?&]help=1/.test(location.search)) set(true);
+})();
   // ?settings=1 直接展开外观面板（截图/分享链接时用）
   if(/[?&]settings=1/.test(location.search)) document.getElementById('settings').classList.add('open');
   document.querySelectorAll('.opt').forEach(function(o){

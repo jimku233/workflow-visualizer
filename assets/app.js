@@ -119,10 +119,18 @@
   // A3：触屏抬手后浏览器会补发一套 mousedown/mouseup，若不忽略，"轻点"会跑两遍（还会顺带起一次拖动）
   window.addEventListener('mousemove',function(e){ if(!drag) return; var v=V[drag.n]; var dx=e.clientX-drag.x, dy=e.clientY-drag.y; if(Math.abs(dx)+Math.abs(dy)>3) drag.moved=true; v.view.TX=drag.ox+dx; v.view.TY=drag.oy+dy; paintActive(); });
   window.addEventListener('mouseup',function(e){
-    if(Date.now()-lastTouch<700) return;            // 同上：合成鼠标事件不再重复处理
-    if(drag&&!drag.moved&&drag.n===active){ var g=e.target.closest?e.target.closest('.node'):null; if(g) select(g.getAttribute('data-id')); else if(e.target.closest&&e.target.closest('svg')) select(null); }
+    // 注意：`drag=null` 必须无条件执行。之前把"触屏后的合成事件"判断写成了提前 return，
+    // 结果拖拽状态永远清不掉 —— 表现就是"点一下图以后，图黏在鼠标上跟着走"。
+    var synth = Date.now()-lastTouch<700;
+    if(!synth && drag&&!drag.moved&&drag.n===active){
+      var g=e.target.closest?e.target.closest('.node'):null;
+      if(g) select(g.getAttribute('data-id'));
+      else if(e.target.closest&&e.target.closest('svg')) select(null);
+    }
     drag=null;
   });
+  // 拖到窗口外松手 / 切走窗口时也要松开，否则回来还在"黏着"
+  window.addEventListener('blur',function(){ drag=null; });
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function eachSvg(fn){ VN.forEach(function(n){ if(V[n]) fn(V[n].svg, n); }); }
   // 节点键盘可达：给每个 node 加 tabindex/role/aria-label，Enter/空格＝点击选中

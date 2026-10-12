@@ -12,7 +12,12 @@
    padding:7px 11px;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:var(--ff)}
  .gear:hover{border-color:var(--accent);color:var(--accent)}
  .gear svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
- #settings{display:none;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 16px;
+ #help{display:none;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 16px;box-shadow:var(--shadow)}
+#help.open{display:block}
+#help .row{display:flex;gap:8px;align-items:flex-start;margin-top:9px;font-size:13.5px;line-height:1.65}
+#help .k{flex:0 0 68px;font-weight:600;color:var(--accent-text)}
+#help code{background:var(--panel2);padding:1px 6px;border-radius:6px;font-size:12.5px;border:1px solid var(--line)}
+#settings{display:none;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 16px;
    box-shadow:var(--shadow)}
  #settings.open{display:block}
  #settings .st{font-size:12px;color:var(--muted);letter-spacing:.08em;font-weight:600;margin:0 0 10px}
