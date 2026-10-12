@@ -6,7 +6,7 @@
 <meta name="flow-viz" content="1">
 <meta name="flow-title" content="示例：饮品店 · 每日开店到闭店">
 <meta name="flow-stats" content="13|13|3|577x2296|1134x824|done:3,doing:2,todo:6,risk:1,hold:1">
-<meta name="flow-version" content="1.2.0">
+<meta name="flow-version" content="1.2.1">
 <title>示例：饮品店 · 每日开店到闭店</title>
 <script>
 /* 主题引导：必须在首帧前跑，否则会闪一下深色。
@@ -734,7 +734,7 @@
   <button id="theme" class="icon-btn" title="明/暗"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.6a5.4 5.4 0 100 10.8A5.4 5.4 0 008 2.6z"/><path d="M8 2.6v10.8"/></svg><span>明/暗</span></button>
   <button id="lock" class="icon-btn lock-btn" title="锁定颜色"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3.4" y="7.2" width="9.2" height="6.6" rx="1.4"/><path d="M5.6 7.2V5.4a2.4 2.4 0 014.8 0v1.8"/></svg><span>锁定颜色</span></button>
   <button id="mmd-toggle" class="icon-btn" title="Mermaid"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6.2 4.4L3 8l3.2 3.6M9.8 4.4L13 8l-3.2 3.6"/></svg><span>Mermaid</span></button>
-  <span class="foot-hint"><span class="only-pc">按屏幕自动选竖/横版 · 滚轮缩放 · 拖拽平移 · 双击空白适配 · Esc 取消选中 · 生成器 v1.2.0</span><span class="only-touch">按屏幕自动选竖/横版 · 单指拖动 · 双指缩放 · 点环节看详情 · 生成器 v1.2.0</span></span>
+  <span class="foot-hint"><span class="only-pc">按屏幕自动选竖/横版 · 滚轮缩放 · 拖拽平移 · 双击空白适配 · Esc 取消选中 · 生成器 v1.2.1</span><span class="only-touch">按屏幕自动选竖/横版 · 单指拖动 · 双指缩放 · 点环节看详情 · 生成器 v1.2.1</span></span>
 </footer>
 <div id="mmd-panel">
   <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
@@ -873,6 +873,7 @@
       else if(e.touches.length===2){ drag=null; pinch={d:touchDist(e)}; }
     },{passive:true});
     v.svg.addEventListener('touchmove',function(e){
+      if(!e.touches.length){ drag=null; pinch=null; return; }   // 手指都抬了还在收 move？直接结束
       if(e.touches.length===2){
         if(!measure(v)) return;
         var r=v.svg.getBoundingClientRect();
@@ -904,7 +905,11 @@
     });
   });
   // A3：触屏抬手后浏览器会补发一套 mousedown/mouseup，若不忽略，"轻点"会跑两遍（还会顺带起一次拖动）
-  window.addEventListener('mousemove',function(e){ if(!drag) return; var v=V[drag.n]; var dx=e.clientX-drag.x, dy=e.clientY-drag.y; if(Math.abs(dx)+Math.abs(dy)>3) drag.moved=true; v.view.TX=drag.ox+dx; v.view.TY=drag.oy+dy; paintActive(); });
+  window.addEventListener('mousemove',function(e){
+    if(!drag) return;
+    // 只要鼠标在移动、而**没有任何键被按住**，说明拖动早该结束了（mouseup 丢过 / 拖出窗口松的手）
+    if(typeof e.buttons==='number' && e.buttons===0){ drag=null; return; }
+    var v=V[drag.n]; var dx=e.clientX-drag.x, dy=e.clientY-drag.y; if(Math.abs(dx)+Math.abs(dy)>3) drag.moved=true; v.view.TX=drag.ox+dx; v.view.TY=drag.oy+dy; paintActive(); });
   window.addEventListener('mouseup',function(e){
     // 注意：`drag=null` 必须无条件执行。之前把"触屏后的合成事件"判断写成了提前 return，
     // 结果拖拽状态永远清不掉 —— 表现就是"点一下图以后，图黏在鼠标上跟着走"。
@@ -918,6 +923,8 @@
   });
   // 拖到窗口外松手 / 切走窗口时也要松开，否则回来还在"黏着"
   window.addEventListener('blur',function(){ drag=null; });
+  document.addEventListener('visibilitychange',function(){ if(document.hidden) drag=null; });
+  window.addEventListener('pointercancel',function(){ drag=null; });
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function eachSvg(fn){ VN.forEach(function(n){ if(V[n]) fn(V[n].svg, n); }); }
   // 节点键盘可达：给每个 node 加 tabindex/role/aria-label，Enter/空格＝点击选中
