@@ -316,6 +316,8 @@ node "scripts\serve.mjs" ".\out" 8765
 
 新增踩坑：
 
+X0. **别拿"导出的 .mmd"当源重渲染**：Mermaid 语法**存不下** 时间/负责人/说明/备注 四个字段，而导出件里恰好只有 id/label/形状。踩过一次（讲义那张）。三道防线：① 导出件首行写 `%% workflow-visualizer 导出件…`，`refresh` 见到就跳过；② `refresh` 在做 `.mmd` 源之前会读一遍同名产物，**只要里面有几个节点带时间/负责人/说明就跳过并提示**；③ 实在要从页面反推源，用 `flow-data` 里的 JSON 重新生成规格（`_verify/recover-spec-from-html.mjs` 就是干这个的）。
+
 51. **`--hit` 只定义在 `<svg>` 里 → 页面 CSS 拿不到**：搜索结果清单在 `<aside>`（SVG 外），`var(--hit)` 解析失败会让「关键词底色 / 当前行描边 / 序号圆点」三条规则**静默失效**。自定义属性必须在**使用处的作用域**（或 `:root`）也有定义。
 52. **`visibility:hidden` 的过渡延迟会让「打开即聚焦」失效**：抽屉用 `transition:visibility 0s .18s` 收起，打开那一瞬 `visibility` 仍是 `hidden`（过渡取自**变更前**的状态），`focus()` 直接失败。要把关闭态移出 Tab 序，用 `inert`（立刻生效、不动动画）。
 53. **`color-mix` 的比例是「加入的颜色占比」**：`color-mix(in srgb, 组色 53%, 墨色)` 是 53% 组色——比例越大越**浅**。压深浅色主题时方向搞反过一次，被 `contrast.mjs` 当场抓住（最低只有 3.39:1）。**配色改动一律先跑对比度门。**

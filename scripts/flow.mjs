@@ -1517,6 +1517,22 @@ async function cmdRefresh(dir, flags) {
     const out = join(target, base + '.html');
     // 输入是 .mmd/.md 时**不要**写 <同名>.mmd：那正是源文件本身，会被导出结果改写（注释、顺序、保留字 id 全丢）
     const isMmdSource = /\.(mmd|markdown|md)$/i.test(f);
+    // 护栏：Mermaid 语法存不下 时间/负责人/说明/备注。若同名产物里已经有这些字段，
+    // 用 .mmd 重渲染就会把它们抹掉（踩过一次）—— 这里直接跳过并提示改 .json。
+    if (isMmdSource && existsSync(out)) {
+      try {
+        const prev = readFileSync(out, 'utf8');
+        const j = /<script id="flow-data" type="application\/json">([\s\S]*?)<\/script>/.exec(prev);
+        if (j) {
+          const d = JSON.parse(j[1]);
+          const rich = (d.nodes || []).filter((n) => n.time || n.owner || n.detail || n.note).length;
+          if (rich) {
+            process.stdout.write('  · 跳过 ' + f + '：同名产物里有 ' + rich + ' 个节点带时间/负责人/说明，.mmd 存不下这些字段\n    → 想重渲染请用 ' + base + '.json（或先把 .mmd 换成带字段的 JSON 源）\n');
+            continue;
+          }
+        }
+      } catch (e) { /* 读不出来就按原样继续 */ }
+    }
     await cmdRender(spec, isMmdSource
       ? { out, svg: join(target, base + '-竖版.svg'), wrap: flags.wrap }
       : { out, all: true, wrap: flags.wrap });
