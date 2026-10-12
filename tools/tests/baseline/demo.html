@@ -35,12 +35,17 @@
     /* --hit 必须在这里也定义一份：搜索命中清单在 <aside> 里，拿不到 svg.css 里定义在 <svg> 上的同名变量
        （原来只定义在 SVG 作用域 → .hit-row 的三条规则全部失效：关键词没底色、当前行没描边、序号圆点没底色） */
     --hit:#4a9dff;
+    /* 文字用途令牌：深色主题下与原色相同（只为浅色提供可加深的落点） */
+    --accent-text:var(--accent);--ok-text:var(--ok);--warn-text:var(--warn);--risk-text:var(--risk);
     --shadow:0 1px 2px rgba(0,0,0,.36),0 10px 26px rgba(0,0,0,.22)}
   html[data-theme='light']{--bg:#e8dbc4;--panel:#f7efdf;--panel2:#f2e8d6;--panel3:#e2d3b8;--text:#2b2721;--muted:#6f6553;--line:#dccbaa;--line2:#c6b28e;
     --accent:#bf6b3a;--accent-soft:#bf6b3a1f;--warn:#b8801a;--risk:#c2403f;--ok:#35935f;
     /* 浅色下页面用的命中色比 SVG 里的 #2b7fe0 更深：#2b7fe0 对 panel3 只有 2.73:1（非文本需 ≥3:1），
        #1a5fb0 对 panel3 4.31、panel2 5.23、panel 5.55（对比度由 tools/contrast.py 复算） */
     --hit:#1a5fb0;
+    /* 小字对比度：--muted 3.89→4.54；下面四个是"文字专用"深色（圆点/描边/填充仍用原色）
+       数值由 tools/tests/contrast.mjs 复算（阈值 4.5:1，取三种面板底最差的那个） */
+    --muted:#645b4b;--accent-text:#884c29;--ok-text:#256843;--warn-text:#795411;--risk-text:#a43534;
     --shadow:0 1px 2px rgba(93,74,45,.13),0 10px 26px rgba(93,74,45,.13)}
   /* 缩小时画布也跟着加深一档，让近白色的方块浮出来（节点底/画布 1.34→1.40，刻意只加一点点） */
   html[data-theme='light'] body:has(svg.zoomed-out){--bg:#e4d7bb;--panel3:#ddcdab}
@@ -57,8 +62,8 @@
   .search input{background:none;border:0;color:var(--text);font-size:12.5px;width:200px;outline:none;font-family:var(--ff)}
   #search-count{font-size:11.5px;color:var(--muted);min-width:58px}
   button{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:6px 10px;font-size:12.5px;cursor:pointer;font-family:var(--ff);display:inline-flex;align-items:center;gap:6px;transition:all .14s}
-  button:hover{border-color:var(--accent);color:var(--accent);background:var(--panel3)}
-  button.on{border-color:var(--accent);color:var(--accent);background:var(--panel3)}
+  button:hover{border-color:var(--accent);color:var(--accent-text);background:var(--panel3)}
+  button.on{border-color:var(--accent);color:var(--accent-text);background:var(--panel3)}
   button.locked{opacity:.5}
   #toast{position:fixed;left:50%;bottom:96px;transform:translate(-50%,14px);max-width:86vw;text-align:center;
     background:var(--panel3);color:var(--text);border:1px solid var(--line2);border-radius:12px;padding:9px 15px;
@@ -68,7 +73,7 @@
   button svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
   a.icon-btn{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:6px 10px;
     font-size:12.5px;display:inline-flex;align-items:center;gap:6px;text-decoration:none;transition:all .14s}
-  a.icon-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--panel3)}
+  a.icon-btn:hover{border-color:var(--accent);color:var(--accent-text);background:var(--panel3)}
   a.icon-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
   .legend{display:flex;gap:6px;align-items:center;margin-left:auto;flex-wrap:wrap}
   .legend button{padding:5px 9px;border-radius:999px;font-size:12px}
@@ -83,7 +88,7 @@
   #canvas[data-show='landscape'] #flow-svg-landscape{display:block}
   .seg{display:flex;align-items:center;gap:2px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:2px}
   .seg button{border:0;background:none;padding:5px 9px;border-radius:8px;font-size:12px}
-  .seg button.on{background:var(--panel3);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent-soft)}
+  .seg button.on{background:var(--panel3);color:var(--accent-text);box-shadow:inset 0 0 0 1px var(--accent-soft)}
   aside{width:330px;flex:0 0 330px;background:var(--panel);border-left:1px solid var(--line);overflow:auto;padding:16px}
   aside::-webkit-scrollbar{width:9px}aside::-webkit-scrollbar-thumb{background:var(--line2);border-radius:9px}
   .ov-kicker{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
@@ -108,16 +113,16 @@
   .hint{font-size:11.5px;color:var(--muted);line-height:1.75;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
   .chips{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
   .chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--panel2)}
-  .chip.st-done{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 40%,transparent)}
-  .chip.st-doing{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,transparent)}
+  .chip.st-done{color:var(--ok-text);border-color:color-mix(in srgb,var(--ok) 40%,transparent)}
+  .chip.st-doing{color:var(--accent-text);border-color:color-mix(in srgb,var(--accent) 40%,transparent)}
   .chip.st-todo{color:var(--muted)}
-  .chip.st-risk{color:var(--risk);border-color:color-mix(in srgb,var(--risk) 40%,transparent)}
-  .chip.st-hold{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 40%,transparent)}
+  .chip.st-risk{color:var(--risk-text);border-color:color-mix(in srgb,var(--risk) 40%,transparent)}
+  .chip.st-hold{color:var(--warn-text);border-color:color-mix(in srgb,var(--warn) 40%,transparent)}
   .kv{font-size:12.5px;line-height:1.7;margin:10px 0}
   .kv b{display:block;color:var(--muted);font-weight:600;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px}
   .kv.note{border-left:2px solid var(--warn);padding:2px 0 2px 10px;background:color-mix(in srgb,var(--warn) 7%,transparent);border-radius:0 8px 8px 0}
   .jump{display:inline-flex;padding:3px 8px;margin:0 4px 4px 0;font-size:11.5px;border-radius:7px;background:var(--panel2);border:1px solid var(--line);color:var(--text);cursor:pointer}
-  .jump:hover{border-color:var(--accent);color:var(--accent)}
+  .jump:hover{border-color:var(--accent);color:var(--accent-text)}
   button.back{margin-bottom:12px;font-size:12px;padding:5px 9px}
   /* 搜索结果：说明/备注这类"看不见的命中"单独一栏，点一下定位 */
   .hit-head{display:flex;align-items:center;gap:8px;margin:16px 0 8px}
@@ -136,7 +141,7 @@
   .hit-row em{font-style:normal;font-size:10.5px;color:var(--muted);margin-left:6px;white-space:nowrap}
   .hit-row .hr-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
   .hit-row .hr-snip{display:block;font-size:11px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .hit-row.soft .hr-snip{color:var(--warn)}
+  .hit-row.soft .hr-snip{color:var(--warn-text)}
   .hit-row mark{background:color-mix(in srgb,var(--hit) 30%,transparent);color:inherit;border-radius:3px;padding:0 2px}
   .hit-row.soft mark{background:color-mix(in srgb,var(--warn) 30%,transparent)}
   .hit-tip{font-size:11px;color:var(--muted);margin:2px 0 7px}
@@ -158,12 +163,12 @@
   #flows-list{padding:10px 12px;overflow:auto;flex:1;display:flex;flex-direction:column;gap:6px}
   .flow-row{display:block;padding:9px 11px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);
     color:var(--text);text-decoration:none;font-size:12.5px;line-height:1.5}
-  .flow-row:hover{border-color:var(--accent);color:var(--accent)}
+  .flow-row:hover{border-color:var(--accent);color:var(--accent-text)}
   .flow-row.cur{border-color:var(--accent);background:var(--panel3);cursor:default}
   .flow-row.cur:hover{border-color:var(--accent);color:var(--text)}
   .flow-row .fr-name{font-weight:600;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .flow-row .fr-meta{color:var(--muted);font-size:11px}
-  .flow-row .fr-cur{color:var(--accent);font-size:11px;margin-left:6px}
+  .flow-row .fr-cur{color:var(--accent-text);font-size:11px;margin-left:6px}
   .fd-hint{margin:0;padding:10px 14px;border-top:1px solid var(--line);font-size:11px;color:var(--muted);line-height:1.6}
   #drawer-scrim{position:fixed;inset:0;background:rgba(0,0,0,.42);opacity:0;pointer-events:none;transition:opacity .18s ease;z-index:19}
   #drawer-scrim.open{opacity:1;pointer-events:auto}
