@@ -16,6 +16,9 @@
     V[n]={n:n, svg:s, vp:document.getElementById('vp-'+n), vw:b.width, vh:b.height, view:{K:1,TX:0,TY:0}, map:{s:1,cx:0,cy:0}, w:0, h:0};
   });
   var active='portrait', manual=false, sel=null, hits=0, drag=null, lastQuery='', searchHits=null;
+  // 触屏与鼠标的"最近一次触摸时间"：必须放在外层 —— window 上的 mouseup/mousemove 也要用它，
+  // 放在每个版式的循环里会让循环外的处理器抛 ReferenceError（点节点没反应、drag 清不掉）
+  var lastTouch=0;
   function cur(){ return V[active]||V[VN[0]]; }
   function measure(v){ var r=v.svg.getBoundingClientRect(); if(r.width<2||r.height<2) return false; v.w=r.width; v.h=r.height; v.map.s=Math.min(v.w/v.vw, v.h/v.vh); v.map.cx=(v.w-v.vw*v.map.s)/2; v.map.cy=(v.h-v.vh*v.map.s)/2; return true; }
   function paint(v){ var k=v.view.K/v.map.s, tx=(v.view.TX-v.map.cx)/v.map.s, ty=(v.view.TY-v.map.cy)/v.map.s; v.vp.setAttribute('transform','translate('+tx+','+ty+') scale('+k+')');
@@ -72,7 +75,7 @@
   function touchDist(e){ var a=e.touches[0], b=e.touches[1]; return Math.sqrt((a.clientX-b.clientX)*(a.clientX-b.clientX)+(a.clientY-b.clientY)*(a.clientY-b.clientY)); }
   VN.forEach(function(n){
     var v=V[n]; if(!v) return;
-    var pinch=null, lastTouch=0;
+    var pinch=null;
     v.svg.addEventListener('wheel',function(e){ e.preventDefault(); var r=v.svg.getBoundingClientRect(); zoomAt(v, e.clientX-r.left, e.clientY-r.top, e.deltaY<0?1.12:1/1.12); },{passive:false});
     v.svg.addEventListener('mousedown',function(e){
       if(Date.now()-lastTouch<700) return;          // 触屏刚结束：这是浏览器补发的合成事件
