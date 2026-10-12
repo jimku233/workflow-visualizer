@@ -1422,7 +1422,7 @@ async function cmdRender(input, flags) {
     { portrait: svgP.svg, landscape: svgW.svg, portraitSize, landscapeSize },
     Lp, mmd, { selfFile, flows: snapshot },
   ));
-  writeOut(join(outDir, FLOW_MANIFEST), JSON.stringify(scanFlows(outDir), null, 2) + '\n');
+  writeOut(join(outDir, FLOW_MANIFEST), JSON.stringify(scanFlowsWithVersion(outDir), null, 2) + '\n');
 
   // 静态首页：本地 file:// 打开时浏览器只会给"纯文件名列表"，
   // 这份 index.html 就是它的替代品（🏠 按钮在 file:// 下指向它）。
@@ -1461,6 +1461,21 @@ async function cmdRender(input, flags) {
   return 0;
 }
 
+/** 扫描产物目录并带上版本信息：清单自身的 generatorVersion + 每个产物 HTML 里的 flow-version。
+ *  渲染与建索引**都要**用它写清单，否则后写的那次会把版本信息抹掉（首页就会显示 v?）。 */
+function scanFlowsWithVersion(dir) {
+  const mf = scanFlows(dir);
+  mf.generatorVersion = FLOW_VERSION;
+  for (const f of mf.flows) {
+    try {
+      const html = readFileSync(join(dir, f.file), 'utf8');
+      const m = /<meta name="flow-version" content="([^"]*)"/.exec(html);
+      f.version = m ? m[1] : '';
+    } catch (e) { f.version = ''; }
+  }
+  return mf;
+}
+
 /** 批量重渲染：把目录里所有"有规格的"流程图刷新成当前版本，然后重建清单与首页。
  *  规格认 *.json（含 nodes 数组）与 *.mmd / *.md；产物名与规格同名（.html）。 */
 async function cmdRefresh(dir, flags) {
@@ -1486,16 +1501,8 @@ async function cmdRefresh(dir, flags) {
 async function cmdIndex(dir, flags) {
   const target = resolve(dir || '.');
   if (!existsSync(target)) fail('目录不存在：' + target);
-  const manifest = scanFlows(target);
-  // 记录每个产物是用哪个版本渲染的：首页据此标出"旧版渲染，可以刷新"
-  manifest.generatorVersion = FLOW_VERSION;
-  for (const f of manifest.flows) {
-    try {
-      const html = readFileSync(join(target, f.file), 'utf8');
-      const m = /<meta name="flow-version" content="([^"]*)"/.exec(html);
-      f.version = m ? m[1] : '';
-    } catch (err) { f.version = ''; }
-  }
+  // 版本信息一起写进清单：首页据此标出"旧版渲染"并显示生成器版本
+  const manifest = scanFlowsWithVersion(target);
   const out = flags.out ? resolve(flags.out) : join(target, FLOW_MANIFEST);
   writeOut(out, JSON.stringify(manifest, null, 2) + '\n');
   process.stdout.write(`flow: 收录 ${manifest.flows.length} 张流程图 → ${out}\n`);
