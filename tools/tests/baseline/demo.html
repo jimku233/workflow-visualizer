@@ -6,6 +6,7 @@
 <meta name="flow-viz" content="1">
 <meta name="flow-title" content="示例：饮品店 · 每日开店到闭店">
 <meta name="flow-stats" content="13|13|3|577x2296|1134x824|done:3,doing:2,todo:6,risk:1,hold:1">
+<meta name="flow-version" content="1.2.0">
 <title>示例：饮品店 · 每日开店到闭店</title>
 <script>
 /* 主题引导：必须在首帧前跑，否则会闪一下深色。
@@ -282,6 +283,14 @@
     .edge-label-bg{fill:var(--card);stroke:var(--edge-soft);stroke-width:1}
     .edge-label{font:500 11.5px/1.2 'Segoe UI','Microsoft YaHei',system-ui,sans-serif;fill:var(--t-meta);text-anchor:middle}
     .band-bg{stroke-width:1.2}
+  /* 分组带标题/步数：深色沿用组色（亮色在深底上清楚）；浅色把组色混到 53% 才够 4.5:1
+     （原色对 7.5% 组色浅底只有 1.31–2.08:1；混深后六个调色板色 4.53–4.58:1） */
+  svg[data-theme='light'] .band-label,
+  svg[data-theme='light'] .band-count{fill:color-mix(in srgb, var(--c, currentColor) 53%, #241f19)}
+  /* 分组带标题/步数：深色沿用组色（亮色在深底上清楚）；浅色把组色混到 41% 才够 4.5:1
+     （原色对 7.5% 组色浅底只有 1.31–2.08:1；混深后六个调色板色 4.53–4.58:1） */
+  svg[data-theme='light'] .band-label,
+  svg[data-theme='light'] .band-count{fill:color-mix(in srgb, var(--c, currentColor) 41%, #241f19)}
     .band-pill{stroke:none;opacity:.16}
     .band-label{font:600 12px/1.2 'Segoe UI','Microsoft YaHei',system-ui,sans-serif}
     .band-count{font:400 11px/1.2 'Segoe UI','Microsoft YaHei',system-ui,sans-serif}
@@ -321,20 +330,20 @@
 <g class="band">
 <rect class="band-bg" x="125.5" y="40.0" width="207.0" height="726.0" rx="16" fill="#4aa3ff" fill-opacity="0.075" stroke="#4aa3ff" stroke-opacity="0.46"/>
 <rect class="band-pill" x="138.5" y="50.0" width="150.6" height="23" rx="11.5" fill="#4aa3ff"/>
-<text class="band-label" x="151.5" y="66.0" fill="#4aa3ff">开店（08:00–09:30）</text>
-<text class="band-count" x="297.1" y="66.0" fill="#4aa3ff" opacity="0.8">4 步</text>
+<text class="band-label" x="151.5" y="66.0" fill="#4aa3ff" style="--c:#4aa3ff">开店（08:00–09:30）</text>
+<text class="band-count" x="297.1" y="66.0" fill="#4aa3ff" style="--c:#4aa3ff" opacity="0.8">4 步</text>
 </g>
 <g class="band">
 <rect class="band-bg" x="40.0" y="778.0" width="377.0" height="740.0" rx="16" fill="#3fbf7f" fill-opacity="0.075" stroke="#3fbf7f" stroke-opacity="0.46"/>
 <rect class="band-pill" x="138.0" y="788.0" width="150.6" height="23" rx="11.5" fill="#3fbf7f"/>
-<text class="band-label" x="151.0" y="804.0" fill="#3fbf7f">营业（09:30–21:00）</text>
-<text class="band-count" x="296.6" y="804.0" fill="#3fbf7f" opacity="0.8">5 步</text>
+<text class="band-label" x="151.0" y="804.0" fill="#3fbf7f" style="--c:#3fbf7f">营业（09:30–21:00）</text>
+<text class="band-count" x="296.6" y="804.0" fill="#3fbf7f" style="--c:#3fbf7f" opacity="0.8">5 步</text>
 </g>
 <g class="band">
 <rect class="band-bg" x="125.5" y="1530.0" width="207.0" height="726.0" rx="16" fill="#e0a030" fill-opacity="0.075" stroke="#e0a030" stroke-opacity="0.46"/>
 <rect class="band-pill" x="138.5" y="1540.0" width="150.6" height="23" rx="11.5" fill="#e0a030"/>
-<text class="band-label" x="151.5" y="1556.0" fill="#e0a030">收尾（21:00–22:30）</text>
-<text class="band-count" x="297.1" y="1556.0" fill="#e0a030" opacity="0.8">4 步</text>
+<text class="band-label" x="151.5" y="1556.0" fill="#e0a030" style="--c:#e0a030">收尾（21:00–22:30）</text>
+<text class="band-count" x="297.1" y="1556.0" fill="#e0a030" style="--c:#e0a030" opacity="0.8">4 步</text>
 </g>
 <path class="edge" data-from="s" data-to="a" marker-end="url(#arrow-portrait)" d="M228.5,181.0 C228.5,212.9 228.5,233.1 228.5,265.0"/>
 <path class="edge" data-from="a" data-to="b" marker-end="url(#arrow-portrait)" d="M228.5,370.0 C228.5,401.9 228.5,422.1 228.5,454.0"/>
@@ -509,6 +518,14 @@
     .edge-label-bg{fill:var(--card);stroke:var(--edge-soft);stroke-width:1}
     .edge-label{font:500 11.5px/1.2 'Segoe UI','Microsoft YaHei',system-ui,sans-serif;fill:var(--t-meta);text-anchor:middle}
     .band-bg{stroke-width:1.2}
+  /* 分组带标题/步数：深色沿用组色（亮色在深底上清楚）；浅色把组色混到 53% 才够 4.5:1
+     （原色对 7.5% 组色浅底只有 1.31–2.08:1；混深后六个调色板色 4.53–4.58:1） */
+  svg[data-theme='light'] .band-label,
+  svg[data-theme='light'] .band-count{fill:color-mix(in srgb, var(--c, currentColor) 53%, #241f19)}
+  /* 分组带标题/步数：深色沿用组色（亮色在深底上清楚）；浅色把组色混到 41% 才够 4.5:1
+     （原色对 7.5% 组色浅底只有 1.31–2.08:1；混深后六个调色板色 4.53–4.58:1） */
+  svg[data-theme='light'] .band-label,
+  svg[data-theme='light'] .band-count{fill:color-mix(in srgb, var(--c, currentColor) 41%, #241f19)}
     .band-pill{stroke:none;opacity:.16}
     .band-label{font:600 12px/1.2 'Segoe UI','Microsoft YaHei',system-ui,sans-serif}
     .band-count{font:400 11px/1.2 'Segoe UI','Microsoft YaHei',system-ui,sans-serif}
@@ -548,20 +565,20 @@
 <g class="band">
 <rect class="band-bg" x="40.0" y="49.0" width="207.0" height="735.0" rx="16" fill="#4aa3ff" fill-opacity="0.075" stroke="#4aa3ff" stroke-opacity="0.46"/>
 <rect class="band-pill" x="53.0" y="59.0" width="150.6" height="23" rx="11.5" fill="#4aa3ff"/>
-<text class="band-label" x="66.0" y="75.0" fill="#4aa3ff">开店（08:00–09:30）</text>
-<text class="band-count" x="211.6" y="75.0" fill="#4aa3ff" opacity="0.8">4 步</text>
+<text class="band-label" x="66.0" y="75.0" fill="#4aa3ff" style="--c:#4aa3ff">开店（08:00–09:30）</text>
+<text class="band-count" x="211.6" y="75.0" fill="#4aa3ff" style="--c:#4aa3ff" opacity="0.8">4 步</text>
 </g>
 <g class="band">
 <rect class="band-bg" x="316.0" y="40.0" width="377.0" height="744.0" rx="16" fill="#3fbf7f" fill-opacity="0.075" stroke="#3fbf7f" stroke-opacity="0.46"/>
 <rect class="band-pill" x="414.0" y="50.0" width="150.6" height="23" rx="11.5" fill="#3fbf7f"/>
-<text class="band-label" x="427.0" y="66.0" fill="#3fbf7f">营业（09:30–21:00）</text>
-<text class="band-count" x="572.6" y="66.0" fill="#3fbf7f" opacity="0.8">5 步</text>
+<text class="band-label" x="427.0" y="66.0" fill="#3fbf7f" style="--c:#3fbf7f">营业（09:30–21:00）</text>
+<text class="band-count" x="572.6" y="66.0" fill="#3fbf7f" style="--c:#3fbf7f" opacity="0.8">5 步</text>
 </g>
 <g class="band">
 <rect class="band-bg" x="767.0" y="40.0" width="207.0" height="735.0" rx="16" fill="#e0a030" fill-opacity="0.075" stroke="#e0a030" stroke-opacity="0.46"/>
 <rect class="band-pill" x="780.0" y="50.0" width="150.6" height="23" rx="11.5" fill="#e0a030"/>
-<text class="band-label" x="793.0" y="66.0" fill="#e0a030">收尾（21:00–22:30）</text>
-<text class="band-count" x="938.6" y="66.0" fill="#e0a030" opacity="0.8">4 步</text>
+<text class="band-label" x="793.0" y="66.0" fill="#e0a030" style="--c:#e0a030">收尾（21:00–22:30）</text>
+<text class="band-count" x="938.6" y="66.0" fill="#e0a030" style="--c:#e0a030" opacity="0.8">4 步</text>
 </g>
 <path class="edge" data-from="s" data-to="a" marker-end="url(#arrow-landscape)" d="M143.0,190.0 C143.0,225.3 143.0,247.7 143.0,283.0"/>
 <path class="edge" data-from="a" data-to="b" marker-end="url(#arrow-landscape)" d="M143.0,388.0 C143.0,419.9 143.0,440.1 143.0,472.0"/>

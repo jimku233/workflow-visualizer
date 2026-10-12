@@ -279,6 +279,17 @@ export async function buildHome(opts) {
   const names = new Set(dirents.map((e) => e.name));
   const manifest = await readManifest(dir);
 
+  // 旧版检测：清单里记了每个产物的渲染器版本，与清单自身的 generatorVersion 比对
+  const staleFiles = new Set();
+  let generatorVersion = '';
+  try {
+    const mf = JSON.parse(readFileSync(join(dir, FLOW_MANIFEST_NAME), 'utf8'));
+    generatorVersion = mf.generatorVersion || '';
+    if (generatorVersion) {
+      for (const f of mf.flows || []) if (f.version !== generatorVersion) staleFiles.add(f.file);
+    }
+  } catch (e) { /* 没有清单就算了 */ }
+
   const cards = [];
   const others = [];
   const dirs = [];
@@ -369,6 +380,7 @@ export async function buildHome(opts) {
 
   // 同名流程图（例如 xxx-副本.html）光看标题分不清，这时把文件名也显示出来
   const titleCount = {};
+  for (const c of cards) if (staleFiles.has(c.name)) c.stale = true;
   for (const c of cards) titleCount[c.title] = (titleCount[c.title] || 0) + 1;
 
   const card = (c) => `<a class="card${c.dev ? ' dev-row' : ''}" href="${c.href}" data-file="${c.name.replace(/"/g, '&quot;')}" data-status="${c.status}" data-mtime="${c.mtimeMs}" title="${c.name.replace(/"/g, '&quot;')}">
@@ -378,6 +390,7 @@ export async function buildHome(opts) {
       ${titleCount[c.title] > 1 ? `<span class="cfile">${c.name}</span>` : ''}
       <span class="cmeta">${c.meta}</span>
       <span class="badge${c.dev ? ' dev' : ' touchonly'}">${c.dev ? '并排对照页 · 给电脑看的' : (fileMode ? '流程图' : '手机上点这个')}</span>
+${c.stale ? '<span class="badge stale">旧版渲染</span>' : ''}
     </div>
   </a>`;
 
@@ -388,7 +401,8 @@ export async function buildHome(opts) {
   const body = diagBox(build, diag)
     + homeHeader(cards.length, crumbHtml, rootPath, join(rootPath, FLOW_MANIFEST_NAME))
     + dupBox(dups, !!opts.canAct)
-    + (cards.length ? `<div class="grid">${cards.map(card).join('')}</div>` : '<small>这个目录里还没有流程图</small>')
+    + (cards.some((c) => c.stale) ? `<div class="tip"><b>有 ${cards.filter((c) => c.stale).length} 个文件是旧版渲染的</b>（渲染器 v${generatorVersion || '?'}）<div class="row"><span class="k">怎么更新</span><span>在项目里跑 <code>node scripts/flow.mjs refresh &lt;目录&gt;</code>，会批量重渲染并重建这个首页</span></div></div>` : '')
+      + (cards.length ? `<div class="grid">${cards.map(card).join('')}</div>` : '<small>这个目录里还没有流程图</small>')
     + (dirs.length ? `<p class="st2">子目录</p>` + dirs.map(({ e, href }) => `<a class="file" href="${href}">📁 ${e.name}</a>`).join('') : '')
     + (others.length ? `<p class="st2">其它文件（矢量图 / Mermaid 源码 / 清单）</p><div class="plain">${others.map(({ e, href }) => `<a href="${href}">${e.name}</a>`).join('')}</div>` : '')
     + homeExtras()

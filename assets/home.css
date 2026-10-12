@@ -105,7 +105,8 @@
  .howto summary{cursor:pointer;padding:11px 15px;font-size:13px;color:var(--accent);font-weight:600}
  .howto .tip{border:0;border-top:1px solid var(--line);border-left:0;border-radius:0;margin:0;box-shadow:none;background:transparent}
  .minihint{font-size:12px;color:var(--muted);line-height:1.75;margin:0}
- .badge.recent{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,transparent)}
+ .badge.stale{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,transparent)}
+.badge.recent{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,transparent)}
  .plain{display:flex;flex-wrap:wrap;gap:8px}
  .plain a{color:var(--muted);text-decoration:none;font-size:12.5px;padding:6px 11px;border:1px solid var(--line);
    border-radius:9px;background:var(--panel)}

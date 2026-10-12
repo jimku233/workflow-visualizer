@@ -19,6 +19,9 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { dirname, resolve, extname, basename, join } from 'node:path';
 import { buildHome } from './serve.mjs';
+
+/** 渲染器版本：写进产物与清单，首页据此标出"旧版渲染"的文件。改了渲染/前端行为就+1。 */
+const FLOW_VERSION = '1.2.0';
 import { fileURLToPath } from 'node:url';
 
 // ── 前端资源：放在 ../assets/，渲染时内联回产物，保证产物仍是**自包含单文件 HTML** ──
@@ -1067,8 +1070,8 @@ function renderSvg(L, vid = 'v', head = true) {
       const lx = ox + b.x + Math.max(13, (b.w - (lw + 8 + cw)) / 2);
       const ly = oy + b.y + 10;
       parts.push(`<rect class="band-pill" x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" width="${lw.toFixed(1)}" height="23" rx="11.5" fill="${b.color}"/>`);
-      parts.push(`<text class="band-label" x="${(lx + 13).toFixed(1)}" y="${(ly + 16).toFixed(1)}" fill="${b.color}">${xml(b.label)}</text>`);
-      parts.push(`<text class="band-count" x="${(lx + lw + 8).toFixed(1)}" y="${(ly + 16).toFixed(1)}" fill="${b.color}" opacity="0.8">${countText}</text>`);
+      parts.push(`<text class="band-label" x="${(lx + 13).toFixed(1)}" y="${(ly + 16).toFixed(1)}" fill="${b.color}" style="--c:${b.color}">${xml(b.label)}</text>`);
+      parts.push(`<text class="band-count" x="${(lx + lw + 8).toFixed(1)}" y="${(ly + 16).toFixed(1)}" fill="${b.color}" style="--c:${b.color}" opacity="0.8">${countText}</text>`);
     }
     parts.push('</g>');
   }
@@ -1218,6 +1221,7 @@ function renderHtml(svgs, L, mmd, meta = {}) {
   const legend = statusesPresent.map((s) => `<button data-status="${s}"><i class="dot st-${s}"></i>${STATUS_LABEL[s] || s}</button>`).join('');
   return fillShell(loadShell(), {
     titleMeta: xml(spec.title || ''),
+    flowVersion: FLOW_VERSION,
     stats: xml(stats),
     titleTag: xml(spec.title || '工作流图'),
     brandName: xml(spec.title || '工作流'),
@@ -1457,10 +1461,41 @@ async function cmdRender(input, flags) {
   return 0;
 }
 
+/** 批量重渲染：把目录里所有"有规格的"流程图刷新成当前版本，然后重建清单与首页。
+ *  规格认 *.json（含 nodes 数组）与 *.mmd / *.md；产物名与规格同名（.html）。 */
+async function cmdRefresh(dir, flags) {
+  const target = resolve(dir || '.');
+  if (!existsSync(target)) fail('目录不存在：' + target);
+  const specs = readdirSync(target).filter((f) => /\.(json|mmd|markdown|md)$/i.test(f)).filter((f) => {
+    if (/^流程索引\.json$/i.test(f)) return false;
+    if (!/\.json$/i.test(f)) return true;
+    try { const j = JSON.parse(readFileSync(join(target, f), 'utf8')); return j && Array.isArray(j.nodes) && j.nodes.length > 0; } catch (e) { return false; }
+  });
+  if (!specs.length) { process.stdout.write('flow: 这个目录里没有可刷新的规格文件（*.json 含 nodes / *.mmd）\n'); return 0; }
+  let n = 0;
+  for (const f of specs) {
+    const spec = join(target, f);
+    const out = join(target, f.replace(/\.(json|mmd|markdown|md)$/i, '') + '.html');
+    await cmdRender(spec, { out, all: true, wrap: flags.wrap });
+    n++;
+  }
+  process.stdout.write(`flow: 已刷新 ${n} 张流程图 → ${target}\n`);
+  return cmdIndex(target, flags);
+}
+
 async function cmdIndex(dir, flags) {
   const target = resolve(dir || '.');
   if (!existsSync(target)) fail('目录不存在：' + target);
   const manifest = scanFlows(target);
+  // 记录每个产物是用哪个版本渲染的：首页据此标出"旧版渲染，可以刷新"
+  manifest.generatorVersion = FLOW_VERSION;
+  for (const f of manifest.flows) {
+    try {
+      const html = readFileSync(join(target, f.file), 'utf8');
+      const m = /<meta name="flow-version" content="([^"]*)"/.exec(html);
+      f.version = m ? m[1] : '';
+    } catch (err) { f.version = ''; }
+  }
   const out = flags.out ? resolve(flags.out) : join(target, FLOW_MANIFEST);
   writeOut(out, JSON.stringify(manifest, null, 2) + '\n');
   process.stdout.write(`flow: 收录 ${manifest.flows.length} 张流程图 → ${out}\n`);
@@ -1793,7 +1828,10 @@ async function main() {
   if (cmd === 'preview') return cmdPreview(rest[0], flags);
   if (cmd === 'index') return cmdIndex(rest[0], flags);
   if (cmd === 'sample') return cmdSample(flags);
-  fail('未知命令：' + cmd + '（可用：render / mermaid / check / index / preview / sample / help）');
+    if (cmd === 'refresh') {
+    return cmdRefresh(rest[0] || '.', flags);
+  }
+  fail('未知命令：' + cmd + '（可用：render / mermaid / check / index / refresh / preview / sample / help）');
 }
 
 const HELP = `flow.mjs — 业务流程 → 两版交互式流程图（竖版适配手机 / 横版适配电脑）+ Mermaid 源码
@@ -1801,6 +1839,7 @@ const HELP = `flow.mjs — 业务流程 → 两版交互式流程图（竖版适
 
 用法：
   node flow.mjs render  <spec.json|spec.mmd> [--out x.html] [--all] [--svg x.svg] [--mmd x.mmd] [--wrap N] [--debug]
+  node flow.mjs refresh <目录>          批量重渲染该目录里所有规格（*.json 含 nodes / *.mmd），并重建清单与首页
   node flow.mjs mermaid <spec.json> [--out x.mmd]
   node flow.mjs check   <spec.json|spec.mmd>
   node flow.mjs preview <流程图.html> [--out 对照预览.html]   # 一页并排看手机/电脑两版

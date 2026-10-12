@@ -48,6 +48,14 @@
     .edge-label-bg{fill:var(--card);stroke:var(--edge-soft);stroke-width:1}
     .edge-label{font:500 11.5px/1.2 var(--ff);fill:var(--t-meta);text-anchor:middle}
     .band-bg{stroke-width:1.2}
+  /* 分组带标题/步数：深色沿用组色（亮色在深底上清楚）；浅色把组色混到 53% 才够 4.5:1
+     （原色对 7.5% 组色浅底只有 1.31–2.08:1；混深后六个调色板色 4.53–4.58:1） */
+  svg[data-theme='light'] .band-label,
+  svg[data-theme='light'] .band-count{fill:color-mix(in srgb, var(--c, currentColor) 53%, #241f19)}
+  /* 分组带标题/步数：深色沿用组色（亮色在深底上清楚）；浅色把组色混到 41% 才够 4.5:1
+     （原色对 7.5% 组色浅底只有 1.31–2.08:1；混深后六个调色板色 4.53–4.58:1） */
+  svg[data-theme='light'] .band-label,
+  svg[data-theme='light'] .band-count{fill:color-mix(in srgb, var(--c, currentColor) 41%, #241f19)}
     .band-pill{stroke:none;opacity:.16}
     .band-label{font:600 12px/1.2 var(--ff)}
     .band-count{font:400 11px/1.2 var(--ff)}

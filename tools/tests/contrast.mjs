@@ -70,4 +70,28 @@ for (const [name, vars] of Object.entries(themes)) {
   for (const [t, v, r, s] of rows) console.log(`  ${String(t).padEnd(22)} ${String(v).padEnd(9)} ${r.toFixed(2).padStart(6)}:1  ${s}`);
 }
 console.log(fail ? `\n✗ ${fail} 项不达标` : '\n✓ 全部达标（小字 ≥4.5:1，非文本 ≥3:1）');
+
+// ── 追加：SVG 分组带标题（浅色主题下必须压深，否则对 7.5% 组色浅底只有约 1.3–2.1:1）──
+const palette = (/const GROUP_PALETTE = \[([^\]]+)\]/.exec(readFileSync(join(REPO, 'scripts', 'flow.mjs'), 'utf8')) || [])[1];
+if (palette) {
+  const colors = palette.split(',').map((s) => s.trim().replace(/['"]/g, '')).filter(Boolean);
+  const lightBg = hex(resolve(themes.light, '--bg'));
+  const MIX = 0.41;                       // svg.css 里写的比例，必须一致
+  const INK = hex('#241f19');
+  const out = [];
+  for (const c of colors) {
+    const band = c.match(/^#[0-9a-f]{6}$/i) ? hex(c).map((v, i) => Math.round(v * 0.075 + lightBg[i] * 0.925)) : null;
+    if (!band) continue;
+    const mixed = hex(c).map((v, i) => Math.round(v * MIX + INK[i] * (1 - MIX)));
+    out.push([c, ratio(hex(c), band), ratio(mixed, band)]);
+  }
+  console.log('\n浅色主题 · 分组带标题（对 7.5% 组色浅底，需 ≥4.5）：');
+  for (const [c, before, after] of out) {
+    const ok = after >= 4.5;
+    if (!ok) fail++;
+    console.log(`  ${c}  原 ${before.toFixed(2)}:1 → 混深后 ${after.toFixed(2)}:1  ${ok ? 'OK' : 'FAIL'}`);
+  }
+  const min = Math.min(...out.map((r) => r[2]));
+  console.log(`  最低 ${min.toFixed(2)}:1`);
+}
 process.exit(fail ? 1 : 0);
