@@ -54,6 +54,13 @@ good('标签里含分号与引号（不能被误切）', writeSpec('quoted.mmd',
 
 good('一条语句里多个分号链接', writeSpec('semicolon.mmd', 'flowchart TD\n  A[一] --> B[二]; B --> C[三]\n'), { status: 0, has: '节点 3' });
 
+// ── 无害指令白名单：真实 Mermaid 片段常带的 classDef/style/click 必须放行 ──
+good('classDef / class / style / click 被忽略而非报错', writeSpec('whitelist.mmd',
+  'flowchart TD\n  A[甲] --> B[乙]\n  classDef big fill:#fff,stroke:#333\n  class A big\n  style B fill:#eee\n  click A href "https://example.com"\n  accTitle: 标题\n'),
+  { status: 0, has: '节点 2|结构检查通过' });
+
+bad('白名单之外的不支持语法仍要报错', writeSpec('not-whitelisted.mmd',
+  'flowchart TD\n  A[甲] --> B[乙]\n  foobar A B\n'), { status: 2, words: ['不支持', '语法', 'foobar'] });
 // ── 错误输入必须报错，且能定位 ──
 bad('未闭合的节点形状', writeSpec('unclosed.mmd', 'flowchart TD\n  A[unterminated --> B\n'), { status: 2, has: '1|2:', words: ['未闭合', '语法', '形状'] });
 

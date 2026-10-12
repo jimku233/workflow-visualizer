@@ -401,6 +401,7 @@ function parseMermaid(text, file = '<输入>', lineOffset = 0) {
     if (g && !g.members.includes(id)) g.members.push(id);
   };
   const statements = scanStatements(source, file, lineOffset);
+  const ignoredDirectives = [];
 
   for (const stmt of statements) {
     const line = stmt.text.trim();
@@ -414,8 +415,11 @@ function parseMermaid(text, file = '<输入>', lineOffset = 0) {
       spec.direction = d === 'LR' || d === 'RL' ? 'LR' : 'TD';
       continue;
     }
-    if (/^(?:classDef|class|style|linkStyle|click|direction)\b/i.test(line)) {
-      syntaxFail(file, stmt, 0, '不支持的 Mermaid 语法：' + line.split(/\s+/)[0]);
+    // 对渲染语义无影响的真实 Mermaid 指令：忽略（并计数提示），不当语法错误。
+    // 这样从别处粘来的片段（常带 classDef / style / click）也能直接渲染。
+    if (/^(?:classDef|class|style|linkStyle|click|direction|accTitle|accDescr)\b/i.test(line)) {
+      ignoredDirectives.push(line.split(/\s+/)[0].replace(/:$/, ''));
+      continue;
     }
     if (/^subgraph\b/i.test(line)) {
       m = /^subgraph\s+(.+?)\s*$/i.exec(line);
@@ -478,6 +482,9 @@ function parseMermaid(text, file = '<输入>', lineOffset = 0) {
     failAt(file, loc.line, loc.col, 'subgraph 未与 end 配对：缺少 end');
   }
   spec.edges = spec.edges || [];
+  if (ignoredDirectives.length) {
+    spec.ignoredDirectives = [...new Set(ignoredDirectives)];
+  }
   return spec;
 }
 /** 从 .md 中抽出 ```mermaid 代码块；没有就整篇当 mermaid。保留原文行偏移。 */
@@ -515,11 +522,20 @@ function loadSpec(file) {
     const extracted = extractMermaid(text);
     const parsed = parseMermaid(extracted.text, file, extracted.lineOffset);
     activeSource = { file, text };
+    noteIgnored(parsed);
     return parsed;
   }
   const parsed = parseMermaid(text, file, 0);
   activeSource = { file, text };
+  noteIgnored(parsed);
   return parsed;
+}
+
+/** 解析时忽略掉的"无害 Mermaid 指令"提示一句——在 loadSpec 里说，避免被 normalize 重建对象时丢掉。 */
+function noteIgnored(spec) {
+  if (spec && spec.ignoredDirectives && spec.ignoredDirectives.length) {
+    process.stdout.write('  · 已忽略对渲染无影响的 Mermaid 指令：' + spec.ignoredDirectives.join(' / ') + '\n');
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -625,6 +641,8 @@ function normalize(specIn) {
   }
 
   if (!spec.nodes.length) bad('没有任何节点', { property: 'nodes' });
+  // normalize 会重建规格对象，解析阶段记下的"已忽略指令"要带过去，否则提示会丢
+  if (specIn.ignoredDirectives) spec.ignoredDirectives = specIn.ignoredDirectives;
   return spec;
 }
 /** 分组标题（药丸 + "N 步"计数）的尺寸。布局阶段算包围盒、SVG 阶段画药丸，必须共用同一套算法。 */
