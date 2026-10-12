@@ -1,0 +1,31 @@
+# 运行时产物（渲染出来的流程图、索引、回收站）
+out/
+**/out/
+.trash-*/
+
+# 技能运行时会写出的中间文件
+流程索引.json
+
+# 万一有人在 examples/ 里直接生成（README 建议统一 --out out/），别把产物提交上去
+# 注意：examples/示例-报销审批.mmd 是示例输入，不能忽略
+examples/index.html
+examples/*.html
+examples/*-竖版.svg
+examples/*-横版.svg
+
+# 截图 / 导出（docs 下的示意截图放行）
+*.png
+*.pdf
+!docs/*.png
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# 依赖与日志（本项目零依赖，防手滑）
+node_modules/
+*.log
+npm-debug.log*

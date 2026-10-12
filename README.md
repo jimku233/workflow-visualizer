@@ -1,0 +1,146 @@
+# workflow-visualizer
+
+把**业务流程**变成能点、能搜、能导出的**交互式流程图**：一个 HTML 文件搞定，零依赖、纯离线（不请求任何 CDN、不联网），同时产出可以粘进飞书 / 语雀 / GitHub / Typora 的 **Mermaid 源码**。
+
+它同时是一个 [DeepSeek Harness](https://github.com/deepseek-ai) 技能（skill）：**本仓库根目录就是技能目录**，`git clone` 到技能发现路径即可用。
+
+![竖版（手机）](docs/screenshot-portrait.png)
+![横版（电脑）](docs/screenshot-landscape.png)
+
+## 特性
+
+同一份规格会渲染**两版**，页面按窗口比例自动选、底部可手动切：
+
+| 版式 | 用途 |
+|---|---|
+| 竖版 portrait | 单列纵向，手机上一行一个环节，细节完整 |
+| 横版 landscape | 长流程自动分栏（可指定每栏行数），电脑一屏看完 |
+
+- 节点可点开看「时间 / 负责人 / 说明 / 备注」，并高亮上下游、其余淡出
+- 搜索框搜环节、负责人、说明；**↑ ↓ / Enter 连续翻命中**，非命中整体淡出
+- 按状态筛选（已完成 / 进行中 / 需人工把关 / 待开始 / 阻塞等素材）
+- 明 / 暗主题（跟随系统，可锁定）；缩放到看不清小字时自动「简化」并加深对比度
+- 导出当前版式的 **SVG / PNG**，随时复制 **Mermaid** 源码
+- 右侧「全部流程图」抽屉在多个流程之间切换；手机端单指拖动、双指缩放
+- 分组带（阶段/班次）自动成带，标题与计数居中；起点/终点用胶囊，判断用菱形，风险点虚线
+
+## 安装（DSH 技能，一条命令）
+
+DSH 的技能发现规则是「发现根下面**一层**目录里有 `SKILL.md`」（源码里 `segments.length <= 2`）。因此**本仓库根目录就是技能目录**，直接 clone 到技能发现路径即可：
+
+```bash
+# 装成用户级技能（所有项目可用）
+git clone <本仓库地址> ~/.dsh/skills/workflow-visualizer
+
+# 或只给某个项目用
+git clone <本仓库地址> <你的项目>/.dsh/skills/workflow-visualizer
+
+# 更新
+cd ~/.dsh/skills/workflow-visualizer && git pull
+```
+
+Windows（PowerShell）：
+
+```powershell
+git clone <本仓库地址> "$env:USERPROFILE\.dsh\skills\workflow-visualizer"
+```
+
+如果你不想搬家，也可以只把仓库的**父目录**登记进 DSH 配置：
+
+```jsonc
+{
+  "skills": {
+    "filesystem": {
+      "customSkillDirs": ["/绝对路径/到/仓库的父目录"]
+    }
+  }
+}
+```
+
+装好后在会话里说「把这些流程画成图」，或用 `/workflow-visualizer` 直接调用。
+
+> 注意：不要把仓库 clone 成 `~/.dsh/skills/<仓库名>/` 之后再套一层 `skills/` —— 技能发现只认**一层**，多一层就找不到。仓库根必须直接是 `SKILL.md` 所在目录。
+
+## 30 秒上手（命令行，不需要 DSH）
+
+需要 **Node.js ≥ 18**（只用 `node:` 内建模块，没有任何第三方依赖）。
+
+```bash
+# 1. 生成一份示例规格，改它就行
+node scripts/flow.mjs sample --out 我的流程.json
+
+# 2. 结构检查（孤立节点 / 不可达 / 无终点 / 环）
+node scripts/flow.mjs check 我的流程.json
+
+# 3. 渲染：一个 HTML（内含两版式）+ 两版 SVG + Mermaid 源码
+node scripts/flow.mjs render 我的流程.json --out out/我的流程.html --all
+```
+
+也可以直接吃 Mermaid（支持 `flowchart`/`graph`、`subgraph`、`{}` 菱形、`-.->` 虚线、`|标签|`）：
+
+```bash
+node scripts/flow.mjs render examples/示例-报销审批.mmd --out out/示例-报销审批.html --all
+```
+
+> 示例里的 `--out out/…` 建议保留：不指定时产物会写在输入文件旁边，容易把 `examples/` 里的示例**输入**（同名 `.mmd`）覆盖掉，也会让仓库变脏。`out/` 已在 `.gitignore` 里。
+
+想让手机看同一个目录（页面右上角「全部流程图」会自动刷新）：
+
+```bash
+node scripts/serve.mjs ./out 8765
+#  本机    http://127.0.0.1:8765/
+#  手机 →  http://<你的局域网IP>:8765/     ← 手机和电脑连同一个 Wi-Fi
+```
+
+本机直接双击 HTML 也能用（`file://` 模式），但**手机**要访问就得起这个服务。
+
+## 输入格式
+
+两种输入，字段与语法手册见 [`references/spec.md`](references/spec.md)：
+
+- **JSON 规格**：`title / subtitle / direction / wrap / groups / nodes / edges`；
+  节点字段 `kind`（`start` 起点、`end` 终点、`task` 环节、`milestone` 关键检查点、`decision` 判断、`risk` 风险点）、
+  `status`（`done / doing / todo / risk / hold`）、`time / owner / detail / note`。
+- **Mermaid 子集**：`flowchart TD/LR`、`subgraph` 分组、`A[方形]`、`B{菱形}`、`C(胶囊)`、`-.->` 虚线、`|标签|`。
+
+`examples/` 里是一份 JSON 示例（虚构的饮品店日常）和一份 Mermaid 示例（虚构的报销审批），直接改就行。
+
+## CLI 一览
+
+| 命令 | 作用 |
+|---|---|
+| `render <spec> [--out x.html] [--all] [--wrap N] [--debug]` | 渲染 HTML + 两版 SVG + Mermaid；`--all` 才额外写 SVG/MMD |
+| `mermaid <spec.json> [--out x.mmd]` | 只输出 Mermaid 源码 |
+| `check <spec>` | 结构检查（孤立节点 / 不可达 / 无终点 / 环） |
+| `index <目录>` | 重建「流程索引.json」并同步 `file://` 用的静态首页 |
+| `preview <流程图.html>` | 并排对照「手机竖版 / 电脑横版」 |
+| `sample [--out x.json]` | 生成示例规格 |
+| `serve.mjs <目录> [端口]` | 起本地 / 局域网服务（首页、回收站、重命名） |
+
+## 目录结构
+
+```
+workflow-visualizer/          ← 仓库根 = 技能目录（DSH 只认「发现根下面一层」）
+├── SKILL.md              # 技能定义（frontmatter + 使用说明 + 踩坑记录）
+├── README.md             # 你正在看的这份
+├── LICENSE               # MIT
+├── references/spec.md    # 字段 / 语法 / 布局 / 主题完整手册
+├── scripts/flow.mjs      # 渲染器：解析 → 布局 → SVG → 交互 HTML（主体）
+├── scripts/serve.mjs     # 本地 / 局域网服务 + 静态首页生成器
+├── tools/                # 开发期验证脚本（CDP 截图 / 探测），普通使用不需要
+├── examples/             # 中性示例（虚构数据）
+└── docs/                 # README 用的示意截图
+```
+
+## 隐私与安全
+
+- **完全离线**：渲染过程不发起任何网络请求，不使用 CDN，没有遥测。
+- **产物是自包含 HTML**：你写的流程内容（含负责人、备注）会原样打进 HTML 与导出的 SVG/PNG，分享前留意。
+- **`serve.mjs` 会监听本机端口、并对局域网可见**：它带一个只允许**本机回环**调用的「回收站 / 重命名」端点（删除是移进 `.trash-YYYY-MM-DD/`，不是真删）。不希望同网设备访问就别起这个服务。
+- 仓库内的示例都是**虚构数据**，不含任何真实业务信息。
+
+## License
+
+[MIT](LICENSE) © 2026 &lt;你的名字或 GitHub ID&gt;
+
+可自由使用、修改、商用、再分发，只需保留版权与许可声明。
