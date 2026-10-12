@@ -80,6 +80,15 @@ git clone <本仓库地址> "$env:USERPROFILE\.dsh\skills\workflow-visualizer"
 
 要求只有一条：**Node.js ≥ 18**（零第三方依赖，不需要 `npm install`）。
 
+> ⚠️ **纯聊天型 AI 给不出真产物。** ChatGPT / Claude 网页版能跑 **Python**，但跑不了 **Node.js** —— 渲染器是纯 Node 脚本，它们没法执行。所以它们"生成"的交互式 HTML 通常是两种情况：① 把我们发布的 `docs/demo.html` **改数据**；② 自己**手写**一个长得像的页面。
+>
+> **三步自检**（用浏览器打开那个 HTML，Ctrl+F 搜）：
+> 1. 必须能搜到 `flow-viz`、`flow-version`、`flowviz-zoom` 三个标记 —— 一个都没有，就不是本工具出的；
+> 2. 搜 `饮品店` —— 出现就说明它是拿我们的示例改了数据（示例的 SVG 标签/坐标/连线还留在里面）；
+> 3. 看画布上的节点文字是不是你那条流程的，位置与连线是否正常。
+>
+> 想要**真产物**：在装了 Node 的机器上跑 `node scripts/flow.mjs render …`，或者让能跑命令的 agent 跑（DSH / Claude Code / Codex / VS Code Copilot 都行）。
+
 ## 30 秒上手（命令行，不需要 agent）
 
 ```bash
