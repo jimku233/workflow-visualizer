@@ -22,8 +22,9 @@
   function cur(){ return V[active]||V[VN[0]]; }
   function measure(v){ var r=v.svg.getBoundingClientRect(); if(r.width<2||r.height<2) return false; v.w=r.width; v.h=r.height; v.map.s=Math.min(v.w/v.vw, v.h/v.vh); v.map.cx=(v.w-v.vw*v.map.s)/2; v.map.cy=(v.h-v.vh*v.map.s)/2; return true; }
   function paint(v){ var k=v.view.K/v.map.s, tx=(v.view.TX-v.map.cx)/v.map.s, ty=(v.view.TY-v.map.cy)/v.map.s; v.vp.setAttribute('transform','translate('+tx+','+ty+') scale('+k+')');
-    // 屏幕上标题只有几像素时自动简化（隐藏小字与底纹、加粗描边），放大回来自动还原
-    v.svg.classList.toggle('zoomed-out', v.view.K*15 < 8.5);
+    // 自动简化 + 加深：只有**比"适配"再缩小到 85% 以下**才触发（适配时保持原样）
+    // 用相对值而不是"文字 8.5px"：大图的适配本身就已经很小，绝对阈值会让它一进页面就变深
+    v.svg.classList.toggle('zoomed-out', v.view.K < v.map.s * 0.85);
   }
   function paintActive(){ var v=cur(); paint(v); zoomLabel.textContent=Math.round(v.view.K/(v.map.s||1)*100)+'%'; }
   function variantKey(v){ return (V.portrait===v)?'portrait':'landscape'; }

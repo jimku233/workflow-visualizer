@@ -6,6 +6,10 @@
  *{box-sizing:border-box}
  body{margin:0;padding:20px 20px 40px;background:var(--bg);color:var(--text);font:15px/1.7 var(--ff);-webkit-font-smoothing:antialiased}
  .head{display:flex;align-items:center;gap:10px;margin:0 0 6px}
+  /* 只有第一个按钮吃 auto 外边距 → 两个按钮一起靠右（之前两个都吃，"怎么用"会飘到屏幕中间） */
+  .head .gear{margin-left:0}
+  .head .gear:first-of-type{margin-left:auto}
+  .head .gear + .gear{margin-left:8px}
  h1{font-size:19px;margin:0}
  .sub{color:var(--muted);font-size:13px;margin:0 0 16px}
  .gear{margin-left:auto;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:10px;
@@ -116,6 +120,13 @@
  .plain a{color:var(--muted);text-decoration:none;font-size:12.5px;padding:6px 11px;border:1px solid var(--line);
    border-radius:9px;background:var(--panel)}
  .plain a:hover{color:var(--accent);border-color:var(--accent)}
- @media (max-width:620px){ .grid{grid-template-columns:1fr;gap:12px} .thumb{height:150px} }
+ @media (max-width:620px){
+    .grid{grid-template-columns:1fr;gap:12px} .thumb{height:150px}
+    /* 手机端：两个按钮保持一行、字号收小（可点面积仍 ~40px） */
+    h1{font-size:17px}
+    .head{gap:8px}
+    .gear{padding:6px 9px;font-size:12px;white-space:nowrap;gap:5px;min-height:40px}
+    .gear svg{width:14px;height:14px}
+  }
  .foot{color:var(--muted);font-size:12px;margin-top:18px;line-height:1.8}
  small{color:var(--muted);font-size:12px}
