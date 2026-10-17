@@ -1,4 +1,4 @@
-// 解析与校验的验收测试（批次 B 的目标规格）
+// 解析与校验的验收测试：合法输入必须继续成功，非法输入必须按契约报错
 //
 // 用法：node tools/tests/parse-errors.mjs
 // 期望：全部通过（退出码 0）。当前未实现的行为会打印 ✗ 并给出行号，方便逐条推进。
@@ -112,7 +112,7 @@ for (const c of cases) {
 
 console.log(`\n解析/校验验收：${pass}/${cases.length} 通过`);
 if (failures.length) {
-  console.log('未达标项（批次 B 的目标）：');
+  console.log('未通过的用例：');
   failures.forEach(({ c }) => console.log(`  · ${c.name}`));
 }
 process.exit(failures.length ? 1 : 0);

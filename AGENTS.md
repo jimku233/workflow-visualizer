@@ -30,6 +30,45 @@ node tools/tests/regress.mjs check demo  # 产物回归：几何 + 忽略时间�
 - 纯重构必须让 `regress` 报「逐字节相同」；确实要改行为时，确认差异只在你预期的地方，再 `node tools/tests/regress.mjs save demo` 重录基线。
 - 不确定怎么用就 `node scripts/flow.mjs help`。
 
+## 前端改动要点
+
+- 前端是**独立资源文件**（`assets/app.js` / `app.css` / `svg.css` / `home.js` / `home.css` / `shell.html`），渲染时被内联回单文件 HTML —— 改样式改这里，不要往 `scripts/*.mjs` 里塞模板字符串。
+- 首页与流程页的 `{{占位符}}`、DOM 的 id / 类名 / `data-*`、五个 localStorage 键、视图语义，全在 [`docs/interfaces.md`](docs/interfaces.md)，动之前先读第 7 节（内联契约）。
+- 浅色主题的正文小字用 `--accent-text` / `--ok-text` / `--warn-text` / `--risk-text` 这组「文字专用」令牌（`contrast.mjs` 守这一层），不要直接拿 `--accent` 当文字色。
+
+## 基线怎么重录（这里踩过两次坑）
+
+`regress.mjs check demo` 是「现渲染产物 vs `tools/tests/baseline/`」的逐字节比对。**任何会改变产物字节的改动都要重录基线** —— 包括只改**文案**（页脚提示、抽屉说明、署名、版本号），不只是改布局或几何。
+
+重录前先确认差异只在预期位置：
+
+```bash
+node tools/tests/regress.mjs check demo     # 看「首个不同」落在哪一行
+node tools/tests/regress.mjs save demo      # 确认差异合理后重录
+```
+
+## 仓库结构
+
+```
+workflow-visualizer/          ← 仓库根 = 技能目录（发现根下面一层）
+├── SKILL.md                  # 技能定义（frontmatter + 用法 + 经验 + 踩坑）
+├── AGENTS.md                 # 本文件：给 coding agent 的入口与开发约束
+├── README.md                 # 给使用者：安装、上手、CLI、更新机制
+├── CONTRIBUTORS.md           # 作者与致谢
+├── CHANGELOG.md              # 使用者能看到的版本变化
+├── LICENSE                   # MIT
+├── references/spec.md        # 字段 / Mermaid 子集 / 布局 / 主题完整手册
+├── docs/
+│   ├── interfaces.md         # 接口契约：数据结构 / DOM / 视图 / localStorage / 内联契约
+│   └── demo.html             # 示例产物（双击就能看效果）
+├── scripts/flow.mjs          # 渲染器：解析 → 布局 → SVG → 交互 HTML
+├── scripts/serve.mjs         # 本地 / 局域网服务 + 首页生成 + 回收站 / 重命名
+├── assets/                   # 前端源码（渲染时内联，产物仍是单文件 HTML）
+├── tools/tests/              # 四道回归门 + 基线
+├── tools/                    # 开发期验证脚本（CDP 截图 / 探测 / 一次性拆分脚本）
+└── examples/                 # 中性示例（虚构数据）
+```
+
 ## 文档地图
 
 | 文件 | 给谁看 |

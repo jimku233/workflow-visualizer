@@ -194,40 +194,7 @@ node scripts/flow.mjs refresh <产物目录>   # 顺便把所有流程图重渲�
 **退出码**：`0` 成功 · `1` `check` 发现结构问题 · `2` 参数或输入错误（错误信息格式 `flow: 文件:行:列: 说明`）。
 **未知参数会直接报错**（不做静默忽略），`--wrap` 要求 ≥0 的整数（`0` 关闭分栏）。
 
-## 质量与回归（改代码前先看这里）
-
-零依赖、纯 Node 的四道门，任何改动之后一条条跑：
-
-```bash
-node tools/tests/parse-errors.mjs        # 解析与校验的错误契约（14 个用例）
-node tools/tests/mermaid-roundtrip.mjs   # JSON → Mermaid → 再解析，语义是否一致（4 个用例）
-node tools/tests/contrast.mjs            # 深浅主题文字对比度（小字 ≥4.5:1，非文本 ≥3:1）
-node tools/tests/regress.mjs check demo  # 产物回归：几何数据 + 忽略时间戳后的逐字节比对
-```
-
-- 纯重构的验收标准是 **`regress` 报「逐字节相同」**；确实要改行为时，先确认差异只在你预期的地方，再 `node tools/tests/regress.mjs save demo` 重录基线。
-- 前端是**独立的资源文件**（`assets/*`），由渲染器在出图时内联回单文件 HTML —— 所以改样式不用再碰转义字符串；契约见 [`docs/interfaces.md`](docs/interfaces.md) 第 7 节。
-- [`docs/frontend-review.md`](docs/frontend-review.md) 是前端审阅清单（P0/P1/P2，含已修与待办）。
-
-## 目录结构
-
-```
-workflow-visualizer/          ← 仓库根 = 技能目录（只认「发现根下面一层」）
-├── SKILL.md                  # 技能定义（frontmatter + 用法 + 踩坑记录）
-├── README.md                 # 你正在看的这份（给人看）
-├── LICENSE                   # MIT
-├── references/spec.md        # 字段 / 语法 / 布局 / 主题完整手册
-├── docs/interfaces.md        # 接口契约：数据结构 / DOM / 视图 / localStorage / 内联契约
-├── docs/frontend-review.md   # 前端审阅报告（P0/P1/P2）
-├── scripts/flow.mjs          # 渲染器：解析 → 布局 → SVG → 交互 HTML
-├── scripts/serve.mjs         # 本地 / 局域网服务 + 静态首页生成器
-├── assets/                   # 前端源码（渲染时内联，产物仍是单文件）
-│   ├── app.js / app.css / svg.css        # 流程图页
-│   └── home.js / home.css / shell.html   # 首页 / HTML 骨架（含 {{占位符}}）
-├── tools/tests/              # 四道回归门（上面那四条命令）+ 基线
-├── tools/                    # 开发期验证脚本（CDP 截图 / 探测 / 一次性拆分脚本）
-└── examples/                 # 中性示例（虚构数据）
-```
+> 想改代码、或基于它做自己的变体？先读 [AGENTS.md](AGENTS.md)（硬约束 + 改完必须跑的四道回归门）和 [docs/interfaces.md](docs/interfaces.md)（不能破坏的接口契约）。
 
 ## 隐私与安全
 
