@@ -275,8 +275,12 @@
     var softOnly=Object.keys(softSet).filter(function(id){ return !shownSet[id]; }).length;
     document.getElementById('search-count').textContent=q?(hits+' 个匹配'+(softOnly?'（'+softOnly+' 个只在说明/备注里）':'')):'';
     // 手机端结果清单默认藏在收起的抽屉里，搜到东西就自动弹出来（这是'搜了等于没提示'的根因）
-    if(q&&hits>0&&!sel) setPanel(true);
-    if(!sel) refreshPanel();
+    // 产品决策：一旦开始搜索就回到"命中清单" —— 否则之前选中的节点详情会把命中清单挡住，只剩顶栏计数
+    if(q&&hits>0){
+      if(sel) select(null);       // 清掉选中态（手机上下面的 setPanel 会再把面板打开）
+      setPanel(true);
+      refreshPanel();
+    } else if(!sel) refreshPanel();
     if(q&&hits>0&&focusOn) focusHits();
   });
   // 节点在画布(user)坐标系里的矩形。注意 getBBox() 返回的是节点自身局部坐标（0,0~w,h），
