@@ -127,6 +127,13 @@
     .head{gap:8px;flex-wrap:wrap}
     .gear{padding:6px 9px;font-size:12px;white-space:nowrap;gap:5px;min-height:40px}
     .gear svg{width:14px;height:14px}
+    /* 手机端防止横向溢出（长路径/长文件名会把页面撑宽，导致右上角按钮被裁掉） */
+    body{overflow-x:hidden}
+    .pathbox{max-width:100%}
+    .pathbox code{max-width:100%;overflow-wrap:anywhere;word-break:break-all}
+    .bars{max-width:100%}
+    .bars input{width:min(230px,52vw)}
+    .head .gear{max-width:47%}
   }
  .foot{color:var(--muted);font-size:12px;margin-top:18px;line-height:1.8}
  small{color:var(--muted);font-size:12px}
