@@ -76,7 +76,7 @@
 <div id="flows-drawer" role="dialog" aria-modal="true" aria-label="全部流程图" aria-hidden="true">
   <div class="fd-head">本机的流程图<button id="flows-close">✕</button></div>
   <div id="flows-list"></div>
-  <p class="fd-hint">这里是同一目录下由本 skill 生成的所有流程图（按修改时间倒序）。用 HTTP 打开时会实时刷新；直接双击本地文件时用的是生成当时的清单。</p>
+  <p class="fd-hint">这里是同一目录下由本 skill 生成的所有流程图（按修改时间倒序）。用 HTTP 打开时会实时刷新；直接双击本地文件时用的是生成当时的清单。<b>如果这个 HTML 是被单独拷出来的</b>（同目录没有 index.html 与清单），右上角「首页」和这里会 404 —— 把整个目录一起拷/发过去就正常。</p>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
 <script id="flow-data" type="application/json">{{json}}</script>
