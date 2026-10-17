@@ -133,6 +133,10 @@
     .pathbox code{max-width:100%;overflow-wrap:anywhere;word-break:break-all}
     .bars{max-width:100%}
     .bars input{width:min(230px,52vw)}
+    /* 过滤/排序在窄屏各占一行，避免把页面撑宽（撑宽会让右上角按钮被裁掉） */
+    .bars{flex-wrap:wrap}
+    .bars input,.bars select{width:100%}
+    .pathbox .plabel{flex:1 1 100%}
     .head .gear{max-width:47%}
   }
  .foot{color:var(--muted);font-size:12px;margin-top:18px;line-height:1.8}
