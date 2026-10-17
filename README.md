@@ -82,10 +82,13 @@ git clone <本仓库地址> "$env:USERPROFILE\.dsh\skills\workflow-visualizer"
 | **DSH / Claude Code** | 全功能（原生认 `SKILL.md`）：读技能 → 写规格 → 跑 `flow.mjs` → 出 HTML/Mermaid ✓ |
 | **Codex CLI / Cursor 等认 `AGENTS.md` 的 agent** | 全功能：仓库根有 [`AGENTS.md`](AGENTS.md) 指路（让它先读 `SKILL.md` 再跑脚本）✓ |
 | **VS Code + GitHub Copilot** | 全功能：仓库带了 `.github/copilot-instructions.md` 与 `/画流程图` 提示词文件（也可直接在终端跑 `node scripts/flow.mjs …`）✓ |
-| **纯聊天型 AI（ChatGPT / Claude 网页版 / 手机 AI）** | 跑不了 Node，**不能渲染**；但可以读 `SKILL.md` + `references/spec.md` 帮你**写出规格（JSON / Mermaid）**，再拿到有 Node 的机器上渲染 |
+| **带代码执行环境的 AI**（ChatGPT Agent 模式 / Codex / Claude Code / Cursor 终端 / CI） | 全功能 ✓ —— 环境里有 Node 就能直接跑渲染器。**产物与本地跑逐字节相同**：渲染是确定性的（同一规格 + 同一版本 = 同一结果，仓库里的回归测试就在证明这点） |
+| **纯聊天（没有代码执行）** | 不能渲染；但可以读 `SKILL.md` + `references/spec.md` 帮你**写出规格（JSON / Mermaid）**，再拿到有 Node 的地方渲染 |
 | **只要一个网页的人** | 不需要 agent：把 `node scripts/flow.mjs render …` 生成的 HTML 发给他，双击就能看 ✓ |
 
 要求只有一条：**Node.js ≥ 18**（零第三方依赖，不需要 `npm install`）。
+
+> **为什么换台机器跑，产物也一模一样？** 渲染器不含随机/时间相关内容：布局、坐标、SVG、CSS 全由规格与代码决定，只有页面里那句"渲染时间"会变（回归脚本按"忽略时间戳后逐字节相同"判定）。所以本地跑、agent 跑、沙箱里跑，结果一致。
 
 > ⚠️ **纯聊天型 AI 给不出真产物。** ChatGPT / Claude 网页版能跑 **Python**，但跑不了 **Node.js** —— 渲染器是纯 Node 脚本，它们没法执行。所以它们"生成"的交互式 HTML 通常是两种情况：① 把我们发布的 `docs/demo.html` **改数据**；② 自己**手写**一个长得像的页面。
 >
