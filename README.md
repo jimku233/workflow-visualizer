@@ -82,7 +82,7 @@ git clone <本仓库地址> "$env:USERPROFILE\.dsh\skills\workflow-visualizer"
 | **DSH / Claude Code** | 全功能（原生认 `SKILL.md`）：读技能 → 写规格 → 跑 `flow.mjs` → 出 HTML/Mermaid ✓ |
 | **Codex CLI / Cursor 等认 `AGENTS.md` 的 agent** | 全功能：仓库根有 [`AGENTS.md`](AGENTS.md) 指路（让它先读 `SKILL.md` 再跑脚本）✓ |
 | **VS Code + GitHub Copilot** | 全功能：仓库带了 `.github/copilot-instructions.md` 与 `/画流程图` 提示词文件（也可直接在终端跑 `node scripts/flow.mjs …`）✓ |
-| **带代码执行环境的 AI**（ChatGPT Agent 模式 / Codex / Claude Code / Cursor 终端 / CI） | 全功能 ✓ —— 环境里有 Node 就能直接跑渲染器。**产物与本地跑逐字节相同**：渲染是确定性的（同一规格 + 同一版本 = 同一结果，仓库里的回归测试就在证明这点） |
+| **带代码执行 / agent 模式的 AI**（ChatGPT Agent 模式 · Codex · Claude Code · Cursor 终端 · 豆包等各家 agent 模式 · CI） | 全功能 ✓ —— 环境里有 Node 就能直接跑渲染器。**产物与本地跑逐字节相同**：渲染是确定性的（同一规格 + 同一版本 = 同一结果，仓库里的回归测试就在证明这点） |
 | **纯聊天（没有代码执行）** | 不能渲染；但可以读 `SKILL.md` + `references/spec.md` 帮你**写出规格（JSON / Mermaid）**，再拿到有 Node 的地方渲染 |
 | **只要一个网页的人** | 不需要 agent：把 `node scripts/flow.mjs render …` 生成的 HTML 发给他，双击就能看 ✓ |
 
