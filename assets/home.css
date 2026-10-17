@@ -143,4 +143,5 @@
     .head .gear{max-width:47%}
   }
  .foot{color:var(--muted);font-size:12px;margin-top:18px;line-height:1.8}
+  .sign{color:var(--muted);font-size:12px;text-align:right;margin:10px 0 0}
  small{color:var(--muted);font-size:12px}
