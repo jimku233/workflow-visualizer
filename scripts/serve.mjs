@@ -273,7 +273,7 @@ function homeHeader(count, crumb, rootPath) {
     <div class="row"><span class="k">文档在哪</span><span>技能目录里（用编辑器打开）：<code>README.md</code> 给人看 · <code>SKILL.md</code> 给 agent 看 · <code>CHANGELOG.md</code> 改了什么 · <code>docs/interfaces.md</code> 接口契约。</span></div>
     <p class="st" style="margin-top:14px">反馈与联系</p>
     <div class="row"><span class="k">出问题</span><span>把报错信息、你的规格（或最小复现）发到 <a href="https://github.com/jimku233/workflow-visualizer/issues" target="_blank" rel="noopener">GitHub Issues</a><span class="only-pc">（Ctrl + 点击新窗口打开）</span>；也可以在 B 站 <b>@jimi绝不吐槽</b> 的视频 / 动态评论区留言。</span></div>
-    <div class="row"><span class="k">觉得有用</span><span>给个 <a href="https://github.com/jimku233/workflow-visualizer" target="_blank" rel="noopener">Star ⭐</a> 吧，谢谢啦 🙏 —— 用得顺手就点一下，不点也完全不影响使用。</span></div>
+    <div class="row"><span class="k">觉得有用</span><span>给个 <a href="https://github.com/jimku233/workflow-visualizer" target="_blank" rel="noopener">Star ⭐</a> 吧，谢谢啦 🙏</span></div>
   </div>
   <div id="settings">
     <p class="st">外观</p>
