@@ -1,0 +1,43 @@
+name: 回归门
+
+# 四道零依赖的回归门。它们不联网、不装包，只跑 node。
+# 公开仓库里，别人提 PR 时会自动跑；这也是「产物逐字节相同」这句话的证明。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    name: 四道门（Node ${{ matrix.node }}）
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['18', '20', '22']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: 环境
+        run: node --version && npm --version
+
+      - name: 1/4 解析与校验契约
+        run: node tools/tests/parse-errors.mjs
+
+      - name: 2/4 Mermaid 往返
+        run: node tools/tests/mermaid-roundtrip.mjs
+
+      - name: 3/4 主题对比度
+        run: node tools/tests/contrast.mjs
+
+      - name: 4/4 产物回归（忽略时间戳后逐字节）
+        run: node tools/tests/regress.mjs check demo

@@ -60,7 +60,9 @@ workflow-visualizer/          ← 仓库根 = 技能目录（发现根下面一�
 ├── references/spec.md        # 字段 / Mermaid 子集 / 布局 / 主题完整手册
 ├── docs/
 │   ├── interfaces.md         # 接口契约：数据结构 / DOM / 视图 / localStorage / 内联契约
-│   └── demo.html             # 示例产物（双击就能看效果）
+│   ├── demo.html             # 示例产物（双击就能看效果）
+│   └── index.html            # GitHub Pages 落地页（指向 demo.html）
+├── .github/workflows/ci.yml  # CI：push/PR 自动跑四道回归门（Node 18/20/22）
 ├── scripts/flow.mjs          # 渲染器：解析 → 布局 → SVG → 交互 HTML
 ├── scripts/serve.mjs         # 本地 / 局域网服务 + 首页生成 + 回收站 / 重命名
 ├── assets/                   # 前端源码（渲染时内联，产物仍是单文件 HTML）

@@ -81,7 +81,7 @@ export async function withOwnTab(opts, fn) {
       await page.send('Runtime.enable');
       if (opts.width && opts.height) {
         await page.send('Emulation.setDeviceMetricsOverride', {
-          width: opts.width, height: opts.height, deviceScaleFactor: 1,
+          width: opts.width, height: opts.height, deviceScaleFactor: opts.scale || 1,
           mobile: !!opts.mobile, screenWidth: opts.width, screenHeight: opts.height,
         });
       }

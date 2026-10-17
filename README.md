@@ -6,8 +6,9 @@
 
 想先看效果：把 [`docs/demo.html`](docs/demo.html) **下载到本地再双击**（GitHub 网页上点开只会显示源码，不会渲染）。它是用 `examples/` 里的中性示例渲染出来的完整产物，单文件、离线可开。
 
-![竖版（手机）](docs/screenshot-portrait.png)
-![横版（电脑）](docs/screenshot-landscape.png)
+| 手机 · 竖版（浅色） | 电脑 · 横版（深色） |
+|---|---|
+| <img src="docs/screenshot-portrait.png" width="260" alt="手机竖版"> | <img src="docs/screenshot-landscape.png" width="620" alt="电脑横版"> |
 
 ## 三件最重要的事
 
