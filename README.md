@@ -225,7 +225,8 @@ workflow-visualizer/          ← 仓库根 = 技能目录（只认怎发现根�
 
 ## 致谢
 
-- `<朋友的名字 / GitHub ID>` —— 参与真实流程的测试与反馈
+- **LK-zui**（GitHub）—— 参与真实流程的测试与反馈
+- 作者 B 站：**@jimi绝不吐槽**
 
 多人共同署名的做法见 [`CONTRIBUTORS.md`](CONTRIBUTORS.md)。
 ## License

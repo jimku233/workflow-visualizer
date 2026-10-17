@@ -262,7 +262,7 @@ function homeExtras() {
 }
 
 /** 署名：显示在首页右下角。改这一行即可；留空字符串则不显示。 */
-const SIGNATURE = '由 jimku233 制作';
+const SIGNATURE = '由 jimku233 制作 · B 站 @jimi绝不吐槽';
 
 /** 首页脚注：设置与主题说明。 */
 function homeFooter(port, manifestPath, fileMode) {
