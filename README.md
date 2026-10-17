@@ -216,7 +216,7 @@ node scripts/flow.mjs refresh <产物目录>   # 顺便把所有流程图重渲�
 - **GitHub**：[开一个 Issue](https://github.com/jimku233/workflow-visualizer/issues) —— 贴上报错信息、你的规格（或最小复现）最有效
 - **B 站**：在 **@jimi绝不吐槽** 的视频 / 动态评论区留言
 
-如果它帮你省了时间，欢迎给个 **Star ⭐** —— 个人项目主要靠这个判断值不值得继续维护。
+如果它帮你省了时间，或者觉得有用，欢迎给个 **Star ⭐** —— 个人项目主要靠这个判断值不值得继续维护。
 
 ## License
 

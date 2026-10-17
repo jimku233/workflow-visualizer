@@ -21,6 +21,10 @@
 #help .row{display:flex;gap:8px;align-items:flex-start;margin-top:9px;font-size:13.5px;line-height:1.65}
 #help .k{flex:0 0 68px;font-weight:600;color:var(--accent-text)}
 #help code{background:var(--panel2);padding:1px 6px;border-radius:6px;font-size:12.5px;border:1px solid var(--line)}
+ /* 「如何使用」里的外链：只用文字色 + 下划线，别抢视觉；对比度走 accent-text 令牌 */
+ #help a{color:var(--accent-text);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--accent) 45%,transparent)}
+ #help a:hover{border-bottom-color:var(--accent-text)}
+ #help a:focus-visible{outline:2px solid var(--accent-text);outline-offset:2px;border-radius:3px}
 #settings{display:none;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 16px;
    box-shadow:var(--shadow)}
  #settings.open{display:block}
