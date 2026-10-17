@@ -123,8 +123,8 @@
  @media (max-width:620px){
     .grid{grid-template-columns:1fr;gap:12px} .thumb{height:150px}
     /* 手机端：两个按钮保持一行、字号收小（可点面积仍 ~40px） */
-    h1{font-size:17px}
-    .head{gap:8px}
+    h1{font-size:17px;flex:1 1 100%}
+    .head{gap:8px;flex-wrap:wrap}
     .gear{padding:6px 9px;font-size:12px;white-space:nowrap;gap:5px;min-height:40px}
     .gear svg{width:14px;height:14px}
   }
