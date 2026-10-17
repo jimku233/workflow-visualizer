@@ -4,7 +4,7 @@
 
 本仓库根目录**就是** [Agent Skill](https://code.claude.com/docs/en/skills) 目录（`SKILL.md` 在根上），`git clone` 到技能发现路径即可用。
 
-想先看效果：直接双击 [`docs/demo.html`](docs/demo.html)（用 `examples/` 里的中性示例渲染出来的完整产物，单文件、离线可开）。
+想先看效果：把 [`docs/demo.html`](docs/demo.html) **下载到本地再双击**（GitHub 网页上点开只会显示源码，不会渲染）。它是用 `examples/` 里的中性示例渲染出来的完整产物，单文件、离线可开。
 
 ![竖版（手机）](docs/screenshot-portrait.png)
 ![横版（电脑）](docs/screenshot-landscape.png)
@@ -216,7 +216,7 @@ node scripts/flow.mjs refresh <产物目录>   # 顺便把所有流程图重渲�
 - **GitHub**：[开一个 Issue](https://github.com/jimku233/workflow-visualizer/issues) —— 贴上报错信息、你的规格（或最小复现）最有效
 - **B 站**：在 **@jimi绝不吐槽** 的视频 / 动态评论区留言
 
-如果它帮你省了时间，或者觉得有用，欢迎给个 **Star ⭐** —— 个人项目主要靠这个判断值不值得继续维护。
+如果它帮你省了时间、或者觉得有用，欢迎给个 **Star ⭐**。谢谢啦，用得上就好 🙂
 
 ## License
 
