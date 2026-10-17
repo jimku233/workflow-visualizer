@@ -14,7 +14,7 @@
     });
   }
   document.getElementById('gear').onclick=function(){ document.getElementById('settings').classList.toggle('open'); };
-// 「怎么用」：和"显示设置"一样是折叠面板；?help=1 直接展开（截图/分享链接用）
+// 怎怎么用」：和"显示设置"一样是折叠面板；?help=1 直接展开（截图/分享链接用）
 (function(){
   var b=document.getElementById('help-btn'), h=document.getElementById('help');
   if(!b||!h) return;
@@ -32,7 +32,7 @@
   }
   apply(read().mode);
 
-  // 每张卡片标出「已锁定 / 单独设过颜色」——这些是这台设备上的本地状态
+  // 每张卡片标出怎已锁定 / 单独设过颜色」——这些是这台设备上的本地状态
   function g(k){ var v=localStorage.getItem(k); if(!v) return null; try{ return JSON.parse(v); }catch(e){ return null; } }
   document.querySelectorAll('.card[data-file]').forEach(function(card){
     var f=card.getAttribute('data-file');

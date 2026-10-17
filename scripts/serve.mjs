@@ -203,7 +203,7 @@ function homeHeader(count, crumb, rootPath) {
   return `<div class="crumbs">${crumb}</div>
   <div class="head">
     <h1>🪄 流程图 · 共 ${count} 张</h1>
-    <button class="gear" id="help-btn" title="怎么用（点开看说明）" aria-controls="help" aria-expanded="false"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.2"/><path d="M6.3 6.2a1.8 1.8 0 113 1.4c-.6.4-.9.7-.9 1.4"/><circle cx="8" cy="11.6" r=".7" fill="currentColor" stroke="none"/></svg><span>怎么用</span></button>
+    <button class="gear" id="help-btn" title="如何使用（点开看说明）" aria-controls="help" aria-expanded="false"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.2"/><path d="M6.3 6.2a1.8 1.8 0 113 1.4c-.6.4-.9.7-.9 1.4"/><circle cx="8" cy="11.6" r=".7" fill="currentColor" stroke="none"/></svg><span>如何使用</span></button>
     <button class="gear" id="gear" title="显示设置"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.4"/><path d="M8 1.8v1.8M8 12.4v1.8M1.8 8h1.8M12.4 8h1.8M3.6 3.6l1.3 1.3M11.1 11.1l1.3 1.3M12.4 3.6l-1.3 1.3M4.9 11.1l-1.3 1.3"/></svg>显示设置</button>
   </div>
   <p class="sub">点卡片打开；手机和电脑看到的是同一批文件。</p>
@@ -252,7 +252,7 @@ function homeHeader(count, crumb, rootPath) {
 /** 卡片下方：详细说明（默认折叠，避免手机上把卡片顶到屏幕外）。 */
 function homeExtras() {
   return `<details class="howto">
-    <summary>怎么用 / 搜索为什么会出现两个命中</summary>
+    <summary>如何使用 / 搜索为什么会出现两个命中</summary>
     <div class="tip">
       <div class="row"><span class="k">看图时</span><span>点任意环节看时间 / 负责人 / 说明；底部工具栏能切 <b>竖版 / 横版</b>、明暗、导出图片；右上角 🏠 回本页；🔒 可以锁定这张图的颜色。</span></div>
       <div class="row"><span class="k">搜到两个</span><span>搜索会连<b>说明和备注</b>一起找，所以有时命中数比你在图上看到的多：<span class="swatch"></span> 蓝边 = 标题 / id / 时间 / 负责人命中；<span class="swatch soft"></span> 橙色虚线圈 = 只在说明或备注里命中（计数会写明"几个只在说明/备注里"）。搜索会自动展开右侧结果清单，↑/↓ 或 Enter 逐个跳。</span></div>

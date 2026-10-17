@@ -6,7 +6,7 @@
  *{box-sizing:border-box}
  body{margin:0;padding:20px 20px 40px;background:var(--bg);color:var(--text);font:15px/1.7 var(--ff);-webkit-font-smoothing:antialiased}
  .head{display:flex;align-items:center;gap:10px;margin:0 0 6px}
-  /* 只有第一个按钮吃 auto 外边距 → 两个按钮一起靠右（之前两个都吃，"怎么用"会飘到屏幕中间） */
+  /* 只有第一个按钮吃 auto 外边距 → 两个按钮一起靠右（之前两个都吃，怎怎么用怎会飘到屏幕中间） */
   .head .gear{margin-left:0}
   .head .gear:first-of-type{margin-left:auto}
   .head .gear + .gear{margin-left:8px}
