@@ -261,6 +261,9 @@ function homeExtras() {
   </details>`;
 }
 
+/** 署名：显示在首页右下角。改这一行即可；留空字符串则不显示。 */
+const SIGNATURE = '由 <你的名字> 制作 · 感谢 <朋友的名字> 参与测试';
+
 /** 首页脚注：设置与主题说明。 */
 function homeFooter(port, manifestPath, fileMode) {
   const fileLine = fileMode
@@ -269,7 +272,7 @@ function homeFooter(port, manifestPath, fileMode) {
   return `<p class="foot">
     外观偏好只存在你这台设备的浏览器里，<b>服务重启也不会丢</b>；换 IP、换端口或清浏览器数据才会重置。<br>
     ${fileLine}清单文件：<code>${manifestPath}</code>。${fileMode ? '' : `这一页由 <code>node serve.mjs &lt;目录&gt; ${port}</code> 动态生成，不占磁盘空间；要停掉服务，跟我说一声或关掉那个终端。`}
-  </p>`;
+  </p>${SIGNATURE ? `\n  <p class="sign">${SIGNATURE}</p>` : ''}`;
 }
 
 /** 首页脚本：设置面板 + 明暗切换（与流程图页面共用 flowviz-theme）。 */

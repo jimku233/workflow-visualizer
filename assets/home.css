@@ -123,8 +123,11 @@
  @media (max-width:620px){
     .grid{grid-template-columns:1fr;gap:12px} .thumb{height:150px}
     /* 手机端：两个按钮保持一行、字号收小（可点面积仍 ~40px） */
-    h1{font-size:17px;flex:1 1 100%}
-    .head{gap:8px;flex-wrap:wrap}
+    /* 手机端：标题 + 两个按钮同排（标题过长用省略号，按钮靠右） */
+    .head{gap:8px;flex-wrap:nowrap}
+    h1{font-size:16px;flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .head .gear{flex:0 0 auto;font-size:11.5px;padding:5px 8px;min-height:34px;gap:4px}
+    .head .gear svg{width:13px;height:13px}
     .gear{padding:6px 9px;font-size:12px;white-space:nowrap;gap:5px;min-height:40px}
     .gear svg{width:14px;height:14px}
     /* 手机端防止横向溢出（长路径/长文件名会把页面撑宽，导致右上角按钮被裁掉） */
