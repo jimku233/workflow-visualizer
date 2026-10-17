@@ -1,10 +1,12 @@
 # workflow-visualizer
 
+[![CI](https://github.com/jimku233/workflow-visualizer/actions/workflows/ci.yml/badge.svg)](https://github.com/jimku233/workflow-visualizer/actions/workflows/ci.yml) [![MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) ![Node](https://img.shields.io/badge/node-%E2%89%A518-brightgreen)
+
 把**业务流程**变成能点、能搜、能导出的**交互式流程图**：一个 HTML 文件搞定，零依赖、纯离线（不请求任何 CDN、不联网），同时产出可以粘进飞书 / 语雀 / GitHub / Typora 的 **Mermaid 源码**。
 
 本仓库根目录**就是** [Agent Skill](https://code.claude.com/docs/en/skills) 目录（`SKILL.md` 在根上），`git clone` 到技能发现路径即可用。
 
-想先看效果：把 [`docs/demo.html`](docs/demo.html) **下载到本地再双击**（GitHub 网页上点开只会显示源码，不会渲染）。它是用 `examples/` 里的中性示例渲染出来的完整产物，单文件、离线可开。
+**想先看效果** → 在线版：<https://jimku233.github.io/workflow-visualizer/>（点开就能点节点、搜索、切竖/横版）。离线看：把 [`docs/demo.html`](docs/demo.html) **下载到本地再双击**（GitHub 网页上点开只会显示源码，不会渲染）。
 
 | 手机 · 竖版（浅色） | 电脑 · 横版（深色） |
 |---|---|
