@@ -16,8 +16,8 @@ import { createServer } from 'node:http';
 import { readFile, stat, readdir, rename, mkdir, writeFile } from 'node:fs/promises';
 import { networkInterfaces } from 'node:os';
 import { extname, join, resolve, relative, sep, basename } from 'node:path';
-import { readFileSync } from 'node:fs';
-import { pathToFileURL } from 'node:url';
+import { readFileSync, existsSync } from 'node:fs';
+import { pathToFileURL, fileURLToPath } from 'node:url';
 
 const root = resolve(process.argv[2] ?? '.');
 const port = Number(process.argv[3] ?? 8765);
@@ -34,6 +34,38 @@ const loadAsset = (name) => {
   const t = readFileSync(new URL('../assets/' + name, import.meta.url), 'utf8');
   return (t.charCodeAt(0) === 0xFEFF ? t.slice(1) : t).replace(/\r\n/g, '\n');
 };
+
+/**
+ * 演示流程图（技能包自带的 docs/demo.html）的访问地址；没有这个文件就返回空串（不显示入口）。
+ * 为什么需要单独算：演示文件在**包内**，永远不进用户的产物目录 —— 用户目录里不该多出一个会碍眼的文件。
+ *   · 服务模式：走 /__demo 只读路由（它不在 root 下，直接当静态文件取会被 403）
+ *   · file:// 模式：静态 index.html 里写相对路径，双击打开也能看到
+ */
+function demoHref(dir, fileMode) {
+  try {
+    const abs = fileURLToPath(new URL('../docs/demo.html', import.meta.url));
+    if (!existsSync(abs)) return '';
+    if (!fileMode) return '/__demo';
+    const rel = relative(resolve(dir), abs);
+    // 跨盘符时 relative() 会返回绝对路径（D:\…），直接当 href 会被当成 "d:" 协议 → 改成 file:// 绝对地址
+    if (/^[a-zA-Z]:[\\/]/.test(rel) || rel.startsWith('/')) return encodeURI('file:///' + abs.replace(/\\/g, '/').replace(/^\/+/, ''));
+    return encodeURI(rel.split(sep).join('/'));
+  } catch (e) { return ''; }
+}
+
+/**
+ * 空目录引导：还没有流程图时，告诉新用户第一张怎么生成，并给一个「先看个演示」的入口。
+ * 这个入口只在 cards.length === 0 时渲染 —— 目录里一有流程图就自动不再出现（不需要删文件）。
+ */
+function emptyState(demo) {
+  return `<div class="empty">
+  <b>这个目录里还没有流程图</b>
+  <span>生成第一张：<code>node scripts/flow.mjs render 规格.json --out out/名字.html --all</code></span>
+  <span>规格怎么写见 <code>references/spec.md</code>；也可以直接把 Mermaid 文本交给 <code>render</code>。</span>
+  ${demo ? `<a class="demobtn" href="${demo}" target="_blank" rel="noopener">先看个演示 →</a>
+  <small>示例是技能包自带的 <code>docs/demo.html</code>，不在你这个目录里；等这里有了流程图，这个入口会自己消失。</small>` : ''}
+</div>`;
+}
 
 /** 名字归一化：去掉空格、去掉 -横版/-竖版，用来把 HTML 与它的 SVG / MMD 归成一家人。 */
 const normName = (s) => String(s).replace(/\s+/g, '');
@@ -232,6 +264,9 @@ function homeHeader(count, crumb, rootPath) {
     <div class="row"><span class="k">③ 键盘</span><span><b>Tab</b> 停在每个环节上、<b>Enter</b>/空格 打开详情；<b>+</b> <b>-</b> 缩放、<b>0</b> 适配整幅。抽屉（全部流程图）用 <b>Esc</b> 关闭。</span></div>
     <p class="st" style="margin-top:14px">手机上看</p>
     <div class="row"><span class="k">同一 Wi-Fi</span><span>在电脑上跑 <code>node scripts/serve.mjs &lt;产物目录&gt; 8765</code>，手机浏览器打开 <code>http://&lt;电脑的局域网IP&gt;:8765/</code>。手机端：单指拖动、双指缩放、轻点环节看详情。</span></div>
+    <p class="st" style="margin-top:14px">第一次用</p>
+    <div class="row"><span class="k">演示图</span><span>目录里<b>还没有流程图</b>时，首页会多一个 <b>「先看个演示 →」</b>：那是技能包自带的 <code>docs/demo.html</code>（用 <code>serve.mjs</code> 打开时走只读路由 <code>/__demo</code>），<b>不在你的产物目录里</b>。画出第一张图后这个入口<b>自己就消失</b>，不用删任何文件；想再看示例，直接双击技能目录里的 <code>docs/demo.html</code>。</span></div>
+    <div class="row"><span class="k">怎么开始</span><span>把流程整理成 JSON（字段见 <code>references/spec.md</code>），或直接把 Mermaid 文本存成 <code>.mmd</code>，然后 <code>node scripts/flow.mjs render 规格.json --out out/名字.html --all</code>。也可以直接跟 agent 说「把这段流程画出来」。</span></div>
     <p class="st" style="margin-top:14px">更新与文档</p>
     <div class="row"><span class="k">图是快照</span><span>产物是自包含 HTML，<b>不会自动更新</b>：改了流程要重新渲染。首页会把用旧版本渲染的文件标成「旧版渲染」，跑 <code>node scripts/flow.mjs refresh &lt;目录&gt;</code> 一次全刷。</span></div>
     <div class="row"><span class="k">删了还在？</span><span>侧栏和这个首页在 <code>file://</code> 下都是<b>生成当时的清单快照</b>：删掉文件后跑一次 <code>node scripts/flow.mjs index &lt;目录&gt;</code>（或 <code>refresh</code>）就会更新；用 <code>node scripts/serve.mjs &lt;目录&gt; 8765</code> 以 HTTP 打开则是实时刷新，页面里删/改名后服务器会自动重建清单。</span></div>
@@ -257,6 +292,7 @@ function homeExtras() {
       <div class="row"><span class="k">看图时</span><span>点任意环节看时间 / 负责人 / 说明；底部工具栏能切 <b>竖版 / 横版</b>、明暗、导出图片；右上角 🏠 回本页；🔒 可以锁定这张图的颜色。</span></div>
       <div class="row"><span class="k">搜到两个</span><span>搜索会连<b>说明和备注</b>一起找，所以有时命中数比你在图上看到的多：<span class="swatch"></span> 蓝边 = 标题 / id / 时间 / 负责人命中；<span class="swatch soft"></span> 橙色虚线圈 = 只在说明或备注里命中（计数会写明"几个只在说明/备注里"）。搜索会自动展开右侧结果清单，↑/↓ 或 Enter 逐个跳。</span></div>
       <div class="row"><span class="k">手势（手机）</span><span>单指拖动平移、双指捏合缩放、轻点节点看详情、点空白收起；电脑上则是滚轮缩放 + 按住拖拽。</span></div>
+      <div class="row"><span class="k">演示图</span><span>目录里还没有流程图时，会有一个「先看个演示 →」。示例放在技能包里（<code>docs/demo.html</code>），<b>不占你的产物目录</b>；画出第一张后入口自动消失。</span></div>
     </div>
   </details>`;
 }
@@ -421,7 +457,7 @@ ${c.stale ? '<span class="badge stale">旧版渲染</span>' : ''}
               + ` · 文档在这个技能目录里（用编辑器打开）：<code>README.md</code> 给人看 · <code>SKILL.md</code> 给 agent 看 · <code>CHANGELOG.md</code> 改了什么`
               + (cards.some((c) => c.stale) ? `<div class="row"><span class="k">有 ${cards.filter((c) => c.stale).length} 个文件是旧版渲染的</span><span>跑 <code>node scripts/flow.mjs refresh &lt;目录&gt;</code> 全部刷新</span></div>` : '')
               + '</div>'
-      + (cards.length ? `<div class="grid">${cards.map(card).join('')}</div>` : '<small>这个目录里还没有流程图</small>')
+      + (cards.length ? `<div class="grid">${cards.map(card).join('')}</div>` : emptyState(demoHref(dir, fileMode)))
     + (dirs.length ? `<p class="st2">子目录</p>` + dirs.map(({ e, href }) => `<a class="file" href="${href}">📁 ${e.name}</a>`).join('') : '')
     + (others.length ? `<p class="st2">其它文件（矢量图 / Mermaid 源码 / 清单）</p><div class="plain">${others.map(({ e, href }) => `<a href="${href}">${e.name}</a>`).join('')}</div>` : '')
     + homeExtras()
@@ -525,6 +561,15 @@ const server = createServer(async (req, res) => {
         return;
       }
       reply(400, { ok: false, error: '未知操作：' + payload.op });
+      return;
+    }
+
+    // 演示流程图：技能包里的 docs/demo.html（不在 root 下，所以单独给一个只读路由）
+    if (urlPath === '/__demo') {
+      const body = await readFile(fileURLToPath(new URL('../docs/demo.html', import.meta.url))).catch(() => null);
+      if (!body) { res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }).end('404 演示文件不在（技能包被裁剪过）'); return; }
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' });
+      res.end(body);
       return;
     }
 

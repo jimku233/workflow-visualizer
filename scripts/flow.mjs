@@ -21,7 +21,7 @@ import { dirname, resolve, extname, basename, join } from 'node:path';
 import { buildHome } from './serve.mjs';
 
 /** 渲染器版本：写进产物与清单，首页据此标出"旧版渲染"的文件。改了渲染/前端行为就+1。 */
-const FLOW_VERSION = '1.2.1';
+const FLOW_VERSION = '1.2.2';
 import { fileURLToPath } from 'node:url';
 
 // ── 前端资源：放在 ../assets/，渲染时内联回产物，保证产物仍是**自包含单文件 HTML** ──
