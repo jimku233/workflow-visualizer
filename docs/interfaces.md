@@ -130,7 +130,7 @@ const SHELL = loadAsset('shell.html');                     // renderHtml() 里�
 **硬要求**
 
 1. 产物必须仍是**单文件自包含 HTML**（CSS / JS / 数据全部内联），`file://` 双击可用；
-2. 改完 assets 后，`render` 的产物应与改动前**忽略渲染时间戳后逐字节相同**（除非你就是要改行为）——用 `_verify/regress.mjs` 判定；
+2. 改完 assets 后，`render` 的产物应与改动前**忽略渲染时间戳后逐字节相同**（除非你就是要改行为）——用 `tools/tests/regress.mjs check demo` 判定；
 3. `svg.css` 里凡是带 `-${vid}` 的 id（filters / markers / patterns / `#vp`）一律写 `{{vid}}`，不要写死 `portrait`；
 4. 仍**不允许**引入构建步骤、npm 依赖或运行时网络请求 —— 内联在渲染时由 Node 完成，一次性。
 

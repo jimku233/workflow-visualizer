@@ -3,7 +3,7 @@
 //     node regress.mjs save  [label] [--repo <目录>] [--spec <规格>]
 //     node regress.mjs check [label] [--repo <目录>] [--spec <规格>]
 //   默认 repo = 本仓库根（可发布副本），label = 默认示例名
-//   基线存在 _verify/baseline/ 下（几何 json + 完整 HTML），对比内容：几何数据 + 样式/脚本指纹 + HTML 逐行差异
+//   基线存在 tools/tests/baseline/ 下（几何 json + 完整 HTML），对比内容：几何数据 + 样式/脚本指纹 + HTML 逐行差异
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync, rmSync } from 'node:fs';
 import { join, dirname, basename } from 'node:path';
 import { execFileSync } from 'node:child_process';

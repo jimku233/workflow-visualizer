@@ -230,6 +230,6 @@ workflow-visualizer/          ← 仓库根 = 技能目录（只认怎发现根�
 多人共同署名的做法见 [`CONTRIBUTORS.md`](CONTRIBUTORS.md)。
 ## License
 
-[MIT](LICENSE) © 2026 &lt;你的名字或 GitHub ID&gt; —— 发布前请把这行占位符换成你自己的署名。
+[MIT](LICENSE) © 2026 jimku233
 
 可自由使用、修改、商用、再分发，只需保留版权与许可声明。

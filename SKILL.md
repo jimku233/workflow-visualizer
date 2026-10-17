@@ -80,7 +80,7 @@ node $sk\..\tools\probe.mjs <url> 探针.js --w 390 --h 844 --mobile --touch
 Copy-Item ".\out\我的流程.html" ".\out\preview.html" -Force
 # 2) 用系统 URI 生成器拿到正确的 file:// 地址（手写百分号编码极易出错）
 $u = [System.Uri]::new((Resolve-Path ".\out\preview.html").Path).AbsoluteUri
-node browser-control\webctl.mjs shot $u "_out\flow\shot.png" 5000
+node browser-control\webctl.mjs shot $u "out\shot.png" 5000
 ```
 然后**看图**确认：文字没被裁、分支没交叉成一团、分组带没盖住节点。
 点击交互也可以脚本验证（`webctl.mjs evalfile`，注意必须是 `(function(){...})()` 表达式，裸 `return` 会报 Illegal return statement）。
@@ -265,7 +265,7 @@ node "scripts\serve.mjs" ".\out" 8765
 13. **搜索"多出来"的匹配不是 bug**：搜 `口` 命中 2 个，是因为搜索同时查说明/备注（"口径校准"）和 id（节点 id `j`）。修法不是改数字，而是**把不可见的命中标出来**（橙色虚线圈 + 分档计数 + 命中清单）。
 14. **后台标签页不能截图**：`Target.createTarget({background:true})` 不抢用户焦点，但后台标签页不产生帧，`Page.captureScreenshot` 会**永远挂住**（实测 120s 超时）。要截图就得用前台标签页（会抢焦点）；后台标签页只适合**纯几何测量**（`getBoundingClientRect` / `getComputedStyle` 都正常）。另外后台标签页的 CSS transition 不推进——测几何前先注入 `*{transition:none!important}`，否则会量到动画起点（我把抽屉的 `rect.x=398` 误判成"没打开"，实际是节流）。
 15. **给"电脑用"的产物也会被挂上"手机上点这个"**：文件列表的徽标只看扩展名。现在 `【`/`_` 开头的文件单独标「电脑用，手机上别点」并置灰——判断条件要跟着展示文案一起改。
-16. **验证产物不要放在被服务的目录里**：`shot-*.png`、探针脚本会出现在手机的文件列表里。统一放进工作区的 `_verify/`（不在 serve 的目录下）。
+16. **验证产物不要放在被服务的目录里**：`shot-*.png`、探针脚本会出现在手机的文件列表里。统一放进一个**不被服务**的目录（例如 `out/_shots/`），别放进被 `serve.mjs` 服务的产物目录。
 17. **抽屉列表在手指底下重排 = 点错条目**：页面内嵌快照原来是"当前页排最前"，而 `fetch('流程索引.json')` 回来是按 mtime 排序 —— 打开抽屉后约 100ms 列表会跳一次，用户点到的已经不是想点的那条，表现为"点了没反应 / 回不去"。修法两条：**清单改成固定按文件名排序**（快照与清单顺序永远一致），**当前页渲染成非链接**。教训：任何"打开后异步刷新"的列表都必须保证**顺序稳定**。
 18. **改了 serve.mjs 要重启服务**：页面模板在进程内存里，不重启就一直是旧版（我为此白查了一轮"首页没有 h1"）。
 19. **目录页漏了 `cache-control` 会让用户永远看到旧首页**：用户两次说"电脑版首页是不是太简陋了/没有缩略图"，实际是我早已改成卡片+缩略图，但浏览器一直用缓存的旧响应。动态生成的 HTML 必须 `no-store`。
@@ -317,7 +317,7 @@ node "scripts\serve.mjs" ".\out" 8765
 新增踩坑：
 
 X-1. **`var` 声明在"循环里"、却在"循环外"用 → 每次事件都抛 ReferenceError（最阴的一次）**：`lastTouch` 写在 `VN.forEach(function(n){…})` 里，而 `window` 上的 `mouseup` 处理器在循环外引用它 ✗ → **每次松开鼠标都抛异常**，于是"点节点没反应"（选中分支在异常之后）、"图黏在鼠标上"（`drag=null` 也在异常之后）两个症状同时出现，而 `node --check` 根本查不出来。教训：① 跨作用域的状态（`drag` / `lastTouch`）一律放最外层；② 浏览器行为探针**必须**监听 `window.onerror` 并把异常打进报告 —— 我在这条上绕了四轮，就是因为只看"现象"不看异常。
-X0. **别拿"导出的 .mmd"当源重渲染**：Mermaid 语法**存不下** 时间/负责人/说明/备注 四个字段，而导出件里恰好只有 id/label/形状。踩过一次（讲义那张）。三道防线：① 导出件首行写 `%% workflow-visualizer 导出件…`，`refresh` 见到就跳过；② `refresh` 在做 `.mmd` 源之前会读一遍同名产物，**只要里面有几个节点带时间/负责人/说明就跳过并提示**；③ 实在要从页面反推源，用 `flow-data` 里的 JSON 重新生成规格（`_verify/recover-spec-from-html.mjs` 就是干这个的）。
+X0. **别拿"导出的 .mmd"当源重渲染**：Mermaid 语法**存不下** 时间/负责人/说明/备注 四个字段，而导出件里恰好只有 id/label/形状。踩过一次（某张真实的业务流程图）。三道防线：① 导出件首行写 `%% workflow-visualizer 导出件…`，`refresh` 见到就跳过；② `refresh` 在做 `.mmd` 源之前会读一遍同名产物，**只要里面有几个节点带时间/负责人/说明就跳过并提示**；③ 实在要从页面反推源，用 `flow-data` 里的 JSON 重新生成规格（`_verify/recover-spec-from-html.mjs` 就是干这个的）。
 
 51. **`--hit` 只定义在 `<svg>` 里 → 页面 CSS 拿不到**：搜索结果清单在 `<aside>`（SVG 外），`var(--hit)` 解析失败会让「关键词底色 / 当前行描边 / 序号圆点」三条规则**静默失效**。自定义属性必须在**使用处的作用域**（或 `:root`）也有定义。
 52. **`visibility:hidden` 的过渡延迟会让「打开即聚焦」失效**：抽屉用 `transition:visibility 0s .18s` 收起，打开那一瞬 `visibility` 仍是 `hidden`（过渡取自**变更前**的状态），`focus()` 直接失败。要把关闭态移出 Tab 序，用 `inert`（立刻生效、不动动画）。
