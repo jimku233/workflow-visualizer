@@ -41,3 +41,9 @@ jobs:
 
       - name: 4/4 产物回归（忽略时间戳后逐字节）
         run: node tools/tests/regress.mjs check demo
+
+      # 发布前自检：生成物 / 敏感串（含全历史）/ 版本号一致性
+      # 只在最低版本跑一次（历史扫描要走 git grep，没必要 ×3）
+      - name: 发布前自检（生成物 / 敏感串 / 版本号）
+        if: matrix.node == '18'
+        run: node tools/check-release.mjs --skip-regress

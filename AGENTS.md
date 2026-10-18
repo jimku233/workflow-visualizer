@@ -36,6 +36,19 @@ node tools/tests/regress.mjs check demo  # 产物回归：几何 + 忽略时间�
 - 首页与流程页的 `{{占位符}}`、DOM 的 id / 类名 / `data-*`、五个 localStorage 键、视图语义，全在 [`docs/interfaces.md`](docs/interfaces.md)，动之前先读第 7 节（内联契约）。
 - 浅色主题的正文小字用 `--accent-text` / `--ok-text` / `--warn-text` / `--risk-text` 这组「文字专用」令牌（`contrast.mjs` 守这一层），不要直接拿 `--accent` 当文字色。
 
+## 发布前：一条命令自检（+ 一条关于 `git add` 的血泪教训）
+
+```bash
+node tools/check-release.mjs          # 生成物 / 敏感串（含全历史）/ 版本号 / 产物回归
+node tools/check-release.mjs --skip-regress   # CI 里用（回归由独立步骤跑）
+```
+
+它检查四件事：仓库里有没有**渲染产物**（根目录 `index.html`、`流程索引.json`、`*-竖版/-横版.svg`、`.tmp/`）、**被跟踪文件与全部历史**里有没有本机路径 / 用户名 / 内网 IP / token 特征、**版本号是否四处一致**（`FLOW_VERSION` / `docs/demo.html` / 基线 / `CHANGELOG` 最新一节）、产物是否与基线逐字节相同。
+
+> **不要用 `git add -A` / `git add .`。** 这个仓库里 `flow.mjs` 会在产物目录旁边顺手写 `index.html`，`render` 也可能在 `examples/` 落 SVG —— `-A` 会把它们一起提交（曾经因此把 `<code id="rootpath">D:\…</code>` 本机路径带进公开仓库与发布包）。
+>
+> 规矩：**先 `git status` 看一眼未跟踪文件，然后 `git add <具体文件>`**。只有在你确认「工作区里没有任何生成物」时才可以用 `-A`，比如刚 clone 完的干净树上只改了三份文档。
+
 ## 基线怎么重录（这里踩过两次坑）
 
 `regress.mjs check demo` 是「现渲染产物 vs `tools/tests/baseline/`」的逐字节比对。**任何会改变产物字节的改动都要重录基线** —— 包括只改**文案**（页脚提示、抽屉说明、署名、版本号），不只是改布局或几何。
@@ -68,6 +81,7 @@ workflow-visualizer/          ← 仓库根 = 技能目录（发现根下面一�
 ├── scripts/serve.mjs         # 本地 / 局域网服务 + 首页生成 + 回收站 / 重命名
 ├── assets/                   # 前端源码（渲染时内联，产物仍是单文件 HTML）
 ├── tools/tests/              # 四道回归门 + 基线
+├── tools/check-release.mjs   # 发布前自检（生成物 / 敏感串含历史 / 版本号 / 产物）
 ├── tools/                    # 开发期验证脚本（CDP 截图 / 探测 / 一次性拆分脚本）
 └── examples/                 # 中性示例（虚构数据）
 ```
