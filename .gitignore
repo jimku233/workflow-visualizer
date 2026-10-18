@@ -36,3 +36,6 @@ tools/tests/.tmp/
 # 拆分脚本的自动备份（一次性，历史交给 git）
 *.pre-split
 *.pre-shell
+
+# 仓库根不要放渲染产物（早期误把 `flow.mjs render --out _t.html` 生成的首页提交了）
+/index.html
