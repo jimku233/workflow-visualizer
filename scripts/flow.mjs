@@ -21,7 +21,7 @@ import { dirname, resolve, extname, basename, join } from 'node:path';
 import { buildHome } from './serve.mjs';
 
 /** 渲染器版本：写进产物与清单，首页据此标出"旧版渲染"的文件。改了渲染/前端行为就+1。 */
-const FLOW_VERSION = '1.2.2';
+const FLOW_VERSION = '1.2.3';
 import { fileURLToPath } from 'node:url';
 
 // ── 前端资源：放在 ../assets/，渲染时内联回产物，保证产物仍是**自包含单文件 HTML** ──
@@ -1066,8 +1066,9 @@ function renderSvg(L, vid = 'v', head = true) {
       const bm = bandTitleMetrics(b.label, countText);
       const lw = bm.labelW;
       const cw = bm.countW;
-      // 药丸 + 计数 作为一组在带内水平居中
-      const lx = ox + b.x + Math.max(13, (b.w - (lw + 8 + cw)) / 2);
+      // 药丸 + 计数 靠**左上角**对齐（左内边距 13）：带宽变化时标题位置稳定，
+      // 长标题也不会被居中拱到带中间；早期是整组水平居中。
+      const lx = ox + b.x + 13;
       const ly = oy + b.y + 10;
       parts.push(`<rect class="band-pill" x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" width="${lw.toFixed(1)}" height="23" rx="11.5" fill="${b.color}"/>`);
       parts.push(`<text class="band-label" x="${(lx + 13).toFixed(1)}" y="${(ly + 16).toFixed(1)}" fill="${b.color}" style="--c:${b.color}">${xml(b.label)}</text>`);
@@ -1094,9 +1095,16 @@ function renderSvg(L, vid = 'v', head = true) {
     const cls = 'edge' + (e.style === 'dashed' ? ' dashed' : '');
     parts.push(`<path class="${cls}" data-from="${xml(e.from)}" data-to="${xml(e.to)}" marker-end="url(#arrow-${vid})" d="${d}"/>`);
     if (e.label) {
-      const mid = ep.kind === 'cubic'
+      let mid = ep.kind === 'cubic'
         ? [(pts[0][0] + pts[3][0]) / 2, (pts[0][1] + pts[3][1]) / 2]
         : pts[1];
+      // 别压住分组带的标题行（标题靠左上后，正好落在带顶那里）：落到标题行里的标签整体下移
+      for (const b of L.bands) {
+        const bTop = oy + b.y;
+        const inRow = (mid[1] - 10.5 < bTop + 36) && (mid[1] + 10.5 > bTop - 6);
+        const inBandX = mid[0] > ox + b.x && mid[0] < ox + b.x + b.w;
+        if (inRow && inBandX) { mid = [mid[0], bTop + 46]; break; }
+      }
       const w = Math.max(32, units(e.label) * 11.5 + 18);
       labelGroups.push(`<g class="edge-label-g" data-from="${xml(e.from)}" data-to="${xml(e.to)}"><rect class="edge-label-bg" x="${(mid[0] - w / 2).toFixed(1)}" y="${(mid[1] - 10.5).toFixed(1)}" width="${w.toFixed(1)}" height="21" rx="10.5"/><text class="edge-label" x="${mid[0].toFixed(1)}" y="${(mid[1] + 4).toFixed(1)}">${xml(e.label)}</text></g>`);
     }
