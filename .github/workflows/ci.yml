@@ -12,6 +12,12 @@ on:
 permissions:
   contents: read
 
+# 连续 push 时取消同一分支上还在跑的旧 run：省时间、少发通知。
+# 只对 PR 生效 —— main 上的每个提交仍然各自拿到独立的 ✅，发布可追溯。
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   gates:
     name: 四道门（Node ${{ matrix.node }}）
