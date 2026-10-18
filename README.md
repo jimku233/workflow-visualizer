@@ -10,7 +10,7 @@
 
 | 手机 · 竖版（浅色） | 电脑 · 横版（深色） |
 |---|---|
-| <img src="docs/screenshot-portrait.png" width="260" alt="手机竖版"> | <img src="docs/screenshot-landscape.png" width="620" alt="电脑横版"> |
+| <img src="docs/screenshot-portrait.png" width="240" alt="手机竖版"> | <img src="docs/screenshot-landscape.png" width="620" alt="电脑横版"> |
 
 ## 三件最重要的事
 
