@@ -53,7 +53,8 @@ node tools/tests/regress.mjs save demo      # 确认差异合理后重录
 workflow-visualizer/          ← 仓库根 = 技能目录（发现根下面一层）
 ├── SKILL.md                  # 技能定义（frontmatter + 用法 + 经验 + 踩坑）
 ├── AGENTS.md                 # 本文件：给 coding agent 的入口与开发约束
-├── README.md                 # 给使用者：安装、上手、CLI、更新机制
+├── README.md                 # 给使用者（中文）：安装、上手、CLI、更新机制
+├── README.en.md              # 同上，英文版（与中文版一一对应，改一份记得同步另一份）
 ├── CONTRIBUTORS.md           # 作者与致谢
 ├── CHANGELOG.md              # 使用者能看到的版本变化
 ├── LICENSE                   # MIT
@@ -76,7 +77,8 @@ workflow-visualizer/          ← 仓库根 = 技能目录（发现根下面一�
 | 文件 | 给谁看 |
 |---|---|
 | [`SKILL.md`](SKILL.md) | agent：技能定义、用法、经验、踩坑 |
-| [`README.md`](README.md) | 人：安装、上手、CLI、更新机制 |
+| [`README.md`](README.md) | 人（中文）：安装、上手、CLI、更新机制 |
+| [`README.en.md`](README.en.md) | 人（英文）：与中文版一一对应，改一份请同步另一份 |
 | [`references/spec.md`](references/spec.md) | 写规格时查：字段 / Mermaid 子集 / 布局 / 主题 |
 | [`docs/interfaces.md`](docs/interfaces.md) | 改代码前查：不能破坏的契约 |
 | [`CHANGELOG.md`](CHANGELOG.md) | 使用者能看到的变化 |

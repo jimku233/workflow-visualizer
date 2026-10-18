@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/jimku233/workflow-visualizer/actions/workflows/ci.yml/badge.svg)](https://github.com/jimku233/workflow-visualizer/actions/workflows/ci.yml) [![MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) ![Node](https://img.shields.io/badge/node-%E2%89%A518-brightgreen)
 
+**简体中文** | [English](README.en.md)
+
 把**业务流程**变成能点、能搜、能导出的**交互式流程图**：一个 HTML 文件搞定，零依赖、纯离线（不请求任何 CDN、不联网），同时产出可以粘进飞书 / 语雀 / GitHub / Typora 的 **Mermaid 源码**。
 
 本仓库根目录**就是** [Agent Skill](https://code.claude.com/docs/en/skills) 目录（`SKILL.md` 在根上），`git clone` 到技能发现路径即可用。
