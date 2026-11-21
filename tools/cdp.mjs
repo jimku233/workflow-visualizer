@@ -60,7 +60,8 @@ export async function withOwnTab(opts, fn) {
   const version = await (await fetch('http://127.0.0.1:9222/json/version')).json();
   const browser = await connect(WebSocket, version.webSocketDebuggerUrl);
   // background:true —— 后台标签页，不抢用户当前标签页的焦点
-  const created = await browser.send('Target.createTarget', { url: 'about:blank', background: true });
+  // opts.foreground=true 才前台打开（录屏 / 必须真实出帧时用，会抢焦点）
+  const created = await browser.send('Target.createTarget', { url: 'about:blank', background: !opts.foreground });
   const targetId = created.result?.targetId;
   if (!targetId) throw new Error('Target.createTarget 失败：' + JSON.stringify(created.error ?? created));
   try {
