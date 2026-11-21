@@ -1445,22 +1445,9 @@ async function cmdRender(input, flags) {
   ));
   writeOut(join(outDir, FLOW_MANIFEST), JSON.stringify(scanFlowsWithVersion(outDir), null, 2) + '\n');
 
-  // 静态首页：本地 file:// 打开时浏览器只会给"纯文件名列表"，
-  // 这份 index.html 就是它的替代品（🏠 按钮在 file:// 下指向它）。
-  try {
-    const homeHtml = await buildHome({
-      dir: outDir,
-      baseHref: '',
-      rootPath: outDir,
-      port: Number(flags.port) || 8765,
-      fileMode: true,
-    });
-    writeOut(join(outDir, 'index.html'), homeHtml);
-  } catch (err) {
-    process.stderr.write('flow: 静态首页生成失败（不影响流程图）：' + err.message + '\n');
-  }
-
-  const written = [htmlPath, join(outDir, FLOW_MANIFEST), join(outDir, 'index.html')];
+  // Mermaid 与 SVG 必须**先落盘**：下面的静态首页是"按目录里实际存在的 .svg 建缩略图
+  // 索引"的，顺序反了，本次渲染的那张卡片就会显示"无预览图"，得再跑一次 render 才补上。
+  const written = [htmlPath, join(outDir, FLOW_MANIFEST)];
   if (flags.all || flags.mmd) {
     const p = flags.mmd ? resolve(flags.mmd) : join(outDir, stem + '.mmd');
     writeOut(p, mmd);
@@ -1472,6 +1459,23 @@ async function cmdRender(input, flags) {
     writeOut(pP, '<?xml version="1.0" encoding="UTF-8"?>\n' + svgPFile.svg);
     writeOut(pW, '<?xml version="1.0" encoding="UTF-8"?>\n' + svgWFile.svg);
     written.push(pP, pW);
+  }
+
+  // 静态首页：本地 file:// 打开时浏览器只会给"纯文件名列表"，
+  // 这份 index.html 就是它的替代品（🏠 按钮在 file:// 下指向它）。
+  try {
+    const homeHtml = await buildHome({
+      dir: outDir,
+      baseHref: '',
+      rootPath: outDir,
+      port: Number(flags.port) || 8765,
+      fileMode: true,
+    });
+    const homePath = join(outDir, 'index.html');
+    writeOut(homePath, homeHtml);
+    written.push(homePath);
+  } catch (err) {
+    process.stderr.write('flow: 静态首页生成失败（不影响流程图）：' + err.message + '\n');
   }
 
   const stats = `节点 ${spec.nodes.length} · 连线 ${spec.edges.length} · 分组 ${spec.groups.length}`
